@@ -1,4 +1,4 @@
-# Understory — Project Plan v1
+ Understory — Project Plan
 
 > A monorepo containing packages for building static choose-your-own-adventure story websites.
 > This document is the source of truth for an AI coding agent implementing this project.
@@ -12,14 +12,15 @@
 3. [Schema](#schema)
 4. [Package Details](#package-details)
 5. [Mermaid Parser v1](#mermaid-parser-v1)
-6. [Client Config](#client-config)
-7. [Display Modes](#display-modes)
-8. [CSS & Theming](#css--theming)
-9. [Project Structure](#project-structure)
-10. [Setup & Development](#setup--development)
-11. [Dependencies](#dependencies)
-12. [CI/CD](#cicd)
-13. [AI Agent Guidelines](#ai-agent-guidelines)
+6. [Layouts & Transitions](#layouts--transitions)
+7. [Client Config](#client-config)
+8. [Display Modes](#display-modes)
+9. [CSS & Theming](#css--theming)
+10. [Project Structure](#project-structure)
+11. [Setup & Development](#setup--development)
+12. [Dependencies](#dependencies)
+13. [CI/CD](#cicd)
+14. [AI Agent Guidelines](#ai-agent-guidelines)
 
 ---
 
@@ -40,22 +41,24 @@ Understory is a system for authoring and displaying interactive fiction as stati
 ```
 pnpm create astro --template understory
 ```
-A user gets a minimal project: a config file and a scenes directory. All logic, components, and rendering lives in the `@probablyduncan/understory-astro` package. They write `.mmd` files, and the site renders their story. To update, they run `pnpm update @probablyduncan/understory-astro`.
+A user gets a minimal project: a config file and a scenes directory. All logic, components, layouts, and rendering lives in the `@probablyduncan/understory-astro` package. They write `.mmd` files, and the site renders their story. To update, they run `pnpm update @probablyduncan/understory-astro`.
 
 **A user's project looks like:**
 ```
 my-story/
 ├── src/
-│   └── scenes/
-│       ├── intro.mmd
-│       └── chapter-1.mmd
-├── astro.config.mjs        ← ~5 lines, uses understory() integration
-├── understory.config.ts    ← optional overrides
-├── custom.css              ← optional CSS overrides (custom properties)
-└── package.json            ← depends on @probablyduncan/understory-astro
+│   ├── scenes/
+│   │   ├── intro.mmd
+│   │   └── chapter-1.mmd
+│   └── layouts/              ← optional: custom layouts (tsx)
+│       └── title-card.tsx
+├── astro.config.mjs          ← ~5 lines, uses understory() integration
+├── understory.config.ts      ← optional overrides
+├── custom.css                ← optional CSS overrides (custom properties)
+└── package.json              ← depends on @probablyduncan/understory-astro
 ```
 
-The user does NOT have pages, components, or layouts in their project. The integration injects all of that at build time via Astro's `injectRoute` API. When you `pnpm update @probablyduncan/understory-astro`, you get new components, features, and bug fixes without touching project files.
+The user does NOT have pages, components, or layouts in their project by default. The integration injects all of that at build time via Astro's `injectRoute` API. When you `pnpm update @probablyduncan/understory-astro`, you get new components, layouts, features, and bug fixes without touching project files.
 
 ---
 
@@ -86,8 +89,8 @@ The user does NOT have pages, components, or layouts in their project. The integ
 │  - Astro integration (content loader, route injection)          │
 │  - Static JSON endpoint generation for scenes                   │
 │  - Config helper (defineStoryConfig)                            │
-│  - SolidJS UI components (dialogue, choices, debug panel)       │
-│  - Solid bindings for runtime engine + config                   │
+│  - Layout system (built-in + user-provided)                     │
+│  - SolidJS UI rendering                                         │
 │  - CSS themes via custom properties + cascade layers            │
 │  - Text animation (typewriter, etc.)                            │
 │  - Debug tools                                                  │
@@ -100,7 +103,7 @@ The user does NOT have pages, components, or layouts in their project. The integ
 
 **Why 3 packages, not 4:**
 - The "template" and "integration" are the same thing. The user's project is minimal config + content. Everything else lives in `@probablyduncan/understory-astro`.
-- The Astro integration layer is small glue code. It's not worth separating from the UI components it serves.
+- The Astro integration layer is small glue code. It's not worth separating from the UI components and layouts it serves.
 - If someone wants to go headless (custom UI), they use `@probablyduncan/understory-core` + `@probablyduncan/understory-runtime` directly and skip `@probablyduncan/understory-astro` entirely.
 - If a React/Vue/Svelte version is ever needed, it would be a new package (`@probablyduncan/understory-react`, etc.) consuming the same core + runtime.
 
@@ -118,6 +121,7 @@ type Scene = {
     nodes: Record<string, StoryNode>;
     entryNodeId: string;
     vars: string[];
+    layout?: string;
     meta?: {
         source?: string;
         title?: string;
@@ -388,7 +392,7 @@ type EngineEvents = {
 };
 ```
 
-**`engine.init()` and async lifecycle:** `init()` must be awaited before calling `start()`. In the Solid component layer, `StoryRoot.tsx` calls `init()` inside `onMount` wrapped in a `createResource` or equivalent async handler, and renders a loading state until init resolves. The engine should not emit any events before `init()` completes.
+**`engine.init()` and async lifecycle:** `init()` must be awaited before calling `start()`. In the Solid component layer, the root layout component calls `init()` during mount and renders a loading state until init resolves. The engine should not emit any events before `init()` completes.
 
 **ConfigStore API:**
 ```typescript
@@ -510,7 +514,7 @@ Where `{prefix}` defaults to `"understory"`, configurable via `StoryConfig.stora
 
 ### @probablyduncan/understory-astro
 
-**Purpose:** The complete Astro package: integration + UI components + themes + debug tools. This is what end users install.
+**Purpose:** The complete Astro package: integration + UI rendering + themes + debug tools. This is what end users install.
 
 **How it works (the Starlight model):**
 
@@ -518,10 +522,9 @@ The package exports an `understory()` function that returns an Astro integration
 1. Registers a content loader that watches `.mmd` files, parses them using `@probablyduncan/understory-core`, and validates output
 2. Injects routes via Astro's `injectRoute()` API — the user's project has no pages
 3. Generates static JSON endpoints for each scene
-4. Injects client scripts (runtime + Solid components)
+4. Injects client scripts (runtime + Solid rendering)
 5. Applies base styles and user's custom CSS
-
-The `.astro` pages and `.tsx` components live inside this package's source. They are NOT copied to the user's project. Astro resolves them from `node_modules` at build time.
+6. Provides a layout system (built-in + user-defined) for per-scene presentation and transitions
 
 **User's astro.config.mjs:**
 ```javascript
@@ -564,108 +567,19 @@ export default defineStoryConfig({
   - `GET /` — main story page
   - `GET /debug` — debug page, injected only when **both** `config.debug === true` **and** `import.meta.env.DEV === true`
 - Provides virtual module `virtual:understory/config` for accessing resolved config in client code
+- Layout system:
+  - Provides at least one built-in default layout
+  - Allows per-scene layout selection via `Scene.meta.layout`
+  - Allows users to register and/or provide custom layouts
+  - Validates unknown layout names at build time when possible, and falls back at runtime
 
-**SolidJS components:**
-- `StoryRoot.tsx` — top-level provider; calls `engine.init()` in `onMount`, shows loading state until resolved, then calls `engine.start()`
-- `DialoguePanel.tsx` — renders text nodes, handles display mode transitions
-- `ChoiceList.tsx` — renders available choices, keyboard navigation (number keys, enter)
-- `TextNode.tsx` — typewriter animation for a single text node
-- `ImageNode.tsx` — renders inline images with alt text
-- `ContinuePrompt.tsx` — "Press to continue" affordance for paged mode
-- `SettingsPanel.tsx` — user config UI (speed, theme, display mode, font size); includes speed control (subsumes `SpeedToggle.tsx` for in-panel use)
-- `DebugPanel.tsx` — state inspector, scene picker, variable editor, go-to-node
-- `ScenePicker.tsx` — searchable scene/node navigation
-- `VariableEditor.tsx` — inputs for all variables in the current scene's `vars` array; booleans → checkboxes, strings → text inputs, numbers → number inputs
-- `SpeedToggle.tsx` — standalone quick playback speed control (usable outside settings panel)
+**Build note:** The `tsc` build compiles `index.ts`, `config.ts`, `loader.ts`, and `endpoints.ts` into `dist/`. The `.astro` pages and `.tsx` components are NOT compiled by tsc — they remain as source files in the package. Astro processes them at the user's build time when resolving injected routes from `node_modules`. The `tsconfig.json` for this package excludes `.astro` files from compilation and includes JSX settings for type-checking `.tsx` files.
 
-**Solid bindings (the glue between runtime engine and Solid signals):**
-- `useStoryEngine()` — instantiates engine once, subscribes to events, returns Solid signals:
-  ```typescript
-  {
-      nodes: Accessor<(StoryNode & ChildRef & NodePosition)[]>,
-      choices: Accessor<ResolvedChoice[]>,
-      engine: StoryEngine,
-  }
-  ```
-- `useConfig()` — wraps `ConfigStore` with Solid signals, applies CSS custom properties to `<html>` element
-- `StoryContext.tsx` — Solid context provider that wires `useStoryEngine()` + `useConfig()` together
-
-**Animation:**
-- `typewriter.ts` — character-by-character reveal driven by token stream
-- `tokens.ts` — splits HTML string into renderable tokens: `{ type: "char" | "tag" | "pause", ... }`
-- Respects `prefers-reduced-motion` media query AND `config.reduceMotion` setting
-- Speed controlled by `config.textSpeed` multiplier applied to base timing
-- Space bar skips current node's animation (shows full text immediately)
-
-**Debug tools (dev mode only, requires `config.debug === true` and `DEV`):**
-- Scene picker: searchable list of all scenes, click to jump
-- Node picker: searchable list of nodes within current scene, click to jump
-- Variable editor: auto-populated from current scene's `vars` array — booleans as checkboxes, strings as text inputs, numbers as number inputs
-- State inspector: live JSON view of full serialized game state
-- Choice history: clickable list to rollback to any previous choice point
-- Quick save/load: named slots for testing specific states
-
-**Story config type:**
-```typescript
-type StoryConfig = {
-    /** Directory containing scene files, relative to project root. Default: "src/scenes" */
-    scenes?: string;
-
-    /** Parsers to use. Default: [mermaid()] */
-    parsers?: Parser[];
-
-    /** Starting scene ID. Required. Throws at build time if absent. */
-    startScene: string;
-
-    /** Enable debug tools. Only active when also in dev mode (import.meta.env.DEV). Default: true */
-    debug?: boolean;
-
-    /** Storage key prefix for localStorage. Default: "understory" */
-    storagePrefix?: string;
-
-    /** Default user config values. Users can override via settings UI. */
-    defaults?: Partial<UserConfig>;
-
-    /** Path to user's custom CSS file for overriding theme variables. */
-    customCss?: string;
-};
-```
-
-**Key constraints:**
-- Depends on `@probablyduncan/understory-core` and `@probablyduncan/understory-runtime`
-- `astro` and `@astrojs/solid-js` as peer dependencies (user installs these)
-- `solid-js` as a direct dependency
-- All game logic flows through `@probablyduncan/understory-runtime`'s engine — components only render and handle input
-- Components NEVER evaluate conditions, traverse nodes, or mutate game state directly
-- Accessible: semantic HTML, ARIA live regions for new text, keyboard navigation, focus management
-
-**Build note:** The `tsc` build compiles `index.ts`, `config.ts`, `loader.ts`, and `endpoints.ts` into `dist/`. (`endpoints.ts` contains the logic for prerendering static JSON files per scene at build time — it is used by the injected `/api/scenes/[id].json.ts` route.) The `.astro` pages and `.tsx` components are NOT compiled by tsc — they remain as source files in the package. Astro processes them at the user's build time when resolving injected routes from `node_modules`. The `tsconfig.json` for this package excludes `.astro` files from compilation and includes JSX settings for type-checking `.tsx` files:
-
-```json
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src",
-    "jsx": "preserve",
-    "jsxImportSource": "solid-js"
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["src/**/*.astro"]
-}
-```
-
-The `.astro` and `.tsx` component files are included in the published package via the `files` field:
-```json
-{
-  "files": ["dist/", "src/pages/", "src/layouts/", "src/components/", "src/engine/", "src/animation/", "src/styles/"]
-}
-```
+The `.astro` and `.tsx` source files are included in the published package via the `files` field.
 
 **Testing strategy:**
 - Unit tests for loader logic (mock filesystem, verify correct parser is called, verify validation runs)
 - Integration tests: minimal Astro project in `__fixtures__/` that builds successfully and produces expected JSON output
-- Component tests with Solid's testing utilities (render components with mock engine, verify signal updates)
 - E2E tests with Playwright:
   - Navigate scenes, make choices, verify correct text appears
   - Save/load persistence across page reload
@@ -697,14 +611,16 @@ Files remain valid Mermaid flowcharts — the VS Code Mermaid preview extension 
 
 Line-by-line parser. Each line is matched against patterns in order:
 
-1. **Comment**: starts with `%%` → skip
-2. **Header**: `flowchart TD` or `flowchart LR` → validate it's a flowchart, skip (direction is ignored)
-3. **Edge statement**: matches pattern `id1 ARROW id2` or `id1 ARROW|text| id2`
-4. **Standalone vertex**: matches `id[text]` or `id(text)` etc. (vertex declared without an edge)
+1. **Front-matter scene metadata comment**: a comment line matching `%% layout: <name>` (typically at the top of the file) → record `scene.meta.layout = <name>`
+2. **Comment**: starts with `%%` → skip
+3. **Header**: `flowchart TD` or `flowchart LR` → validate it's a flowchart, skip (direction is ignored)
+4. **Edge statement**: matches pattern `id1 ARROW id2` or `id1 ARROW|text| id2`
+5. **Standalone vertex**: matches `id[text]` or `id(text)` etc. (vertex declared without an edge)
 
 The parser maintains:
 - A `Map<string, VertexInfo>` — vertex ID → shape + text (populated when first seen)
 - An `Array<EdgeInfo>` — all edges in declaration order
+- Scene-level metadata from front-matter comments (currently layout only)
 
 After all lines are parsed, a second pass converts vertices + edges into the `Scene` structure.
 
@@ -903,6 +819,7 @@ The parser resolves certain vertex texts to non-text node types based on `Parser
 ### Full Example
 
 ```mermaid
+%% layout: default
 flowchart TD
     begin --> a[The barista looks up.]
     a --> b[What can I get you?]
@@ -926,20 +843,6 @@ flowchart TD
     m --o o(No thanks.)
 ```
 
-**Produces (abbreviated):**
-- `scene.entryNodeId = "a"` (begin points to `a`)
-- `begin` is NOT emitted as a node
-- `a`, `b`, `f`, `h`, `i`, `j`, `k`, `l`, `m` → `TextNode`
-- `c`, `d`, `e`, `n`, `o` → `ChoiceNode`
-- `e` has `repeat: "once"` (from `|!|` shorthand); edge `b → e` has `condition: { type: "check", name: "visited:barista:e", op: "falsy" }`
-- `g` → `GateNode { strategy: "random" }` (diamond shape `{}`, text "waitRandom" discarded)
-- `clear` → `ClearNode`
-- `return` → `GateNode { id: "return", children: [], strategy: "first" }`
-- Edge `b → c`: `ChildRef { nodeId: "c", delay: { beats: 0, style: "dots" } }`
-- Edge `c → f`: `ChildRef { nodeId: "f", effects: [{ type: "set", name: "barista:orderedCoffee", value: true }] }`
-- Edge `b → e` with `|!|`: `ChildRef { nodeId: "e", condition: { type: "check", name: "visited:barista:e", op: "falsy" } }`
-- `scene.vars = ["barista:orderedCoffee", "barista:askedAboutSword", "visited:barista:e"]`
-
 ### Error Handling
 
 The parser throws descriptive errors:
@@ -948,6 +851,115 @@ The parser throws descriptive errors:
 - `ParseError: Edge references undefined vertex "xyz"` — after parsing, an edge points to a vertex never declared (this would only happen if a bare ID is used as a target but never as a source, and it's not a reserved keyword)
 
 Errors include the line number when possible. The integration layer catches these and logs them without crashing the dev server.
+
+---
+
+## Layouts & Transitions
+
+Understory supports multiple **full-screen scene layouts** in the Astro integration layer. A layout is a SolidJS component responsible for the presentation of a scene, including any mount/unmount transitions.
+
+### Goals
+
+- Allow different presentation styles per scene (centered dialogue, title cards, split layouts, etc.).
+- Keep `@probablyduncan/understory-runtime` unaware of layouts and transitions.
+- Let authors choose layouts per scene using lightweight scene metadata.
+- Provide a default built-in layout.
+- Allow users of the integration to supply custom layouts without forking template code.
+- Keep transitions primarily an implementation detail of layouts: transitions are authored in the layout components themselves.
+
+### Scene Layout Selection
+
+A scene can specify a layout via a Mermaid front-matter-style comment at the top of its `.mmd` file:
+
+- `%% layout: <layoutName>`
+
+This value is stored as `scene.layout`.
+
+Layout resolution order:
+1. If `scene.layout` is present, use it.
+2. Otherwise, use `StoryConfig.defaultLayout`.
+3. If no layout is specified anywhere, use the package’s built-in default layout.
+
+### Layout Registration (Author / User Experience)
+
+The integration provides:
+- **Built-in layouts** shipped with `@probablyduncan/understory-astro`
+- **User layouts** that can be supplied by the consuming project
+
+User layouts can be made available to the integration via:
+- Explicit registration in `understory.config.ts` (preferred and most predictable)
+- Optional auto-loading of default exports from `src/layouts/*.tsx` (convenience)
+
+Layout naming in v1 is string-based and file-keyed: authors reference a layout by name (e.g., `title-card`), and the integration maps that name to a Solid component.
+
+### Transition Ownership
+
+Transitions are owned by layout components themselves. Layouts may choose to have:
+- No transitions (seamless)
+- Entry transitions (animate in)
+- Exit transitions (animate out)
+- Different behavior depending on whether the previous scene used the same layout
+
+To support this, the layout can receive information about the previous scene (e.g., previous scene ID) so it can decide whether a mount represents a meaningful scene change.
+
+### Engine Coordination Requirements
+
+The UI layer must respect these behavioral constraints:
+
+- **Entry:** The engine should begin rendering only after the layout’s entry transition is complete.
+- **Exit:** The engine should stop rendering before the layout’s exit transition begins.
+
+The plan intentionally does not prescribe the exact SolidJS mechanism used to coordinate this (props, signals, imperative handles, etc.). The contract is behavioral: layouts control transitions, and rendering begins/ends at the appropriate times.
+
+### Build-Time Validation vs Runtime Fallback
+
+- **Build-time:** If a scene references an unknown layout name, this should be surfaced as a validation error during dev/build (including the source file path).
+- **Runtime:** If an unknown layout name is encountered in the client, fall back to the default layout to avoid a broken UI.
+
+### StoryConfig
+
+`StoryConfig` adds layout-related configuration:
+
+```typescript
+type StoryConfig = {
+    /** Directory containing scene files, relative to project root. Default: "src/scenes" */
+    scenes?: string;
+
+    /** Parsers to use. Default: [mermaid()] */
+    parsers?: Parser[];
+
+    /** Starting scene ID. Required. Throws at build time if absent. */
+    startScene: string;
+
+    /** Enable debug tools. Only active when also in dev mode (import.meta.env.DEV). Default: true */
+    debug?: boolean;
+
+    /** Storage key prefix for localStorage. Default: "understory" */
+    storagePrefix?: string;
+
+    /** Default user config values. Users can override via settings UI. */
+    defaults?: Partial<UserConfig>;
+
+    /** Path to user's custom CSS file for overriding theme variables. */
+    stylesheet?: string;
+
+    /**
+     * Default layout name used when a scene does not specify `%% layout: ...`.
+     * If absent, uses the package’s built-in default layout.
+     */
+    defaultLayout?: string;
+
+    /**
+     * Optional explicit registration of custom layouts.
+     * Keys are layout names (matched against `scene.meta.layout`), values are Solid components.
+     */
+    layouts?: Record<string, unknown>;
+};
+```
+
+Notes:
+- Layout values are intentionally untyped in this plan to avoid over-specifying Solid component types here.
+- Custom layout discovery/registration is integration-layer behavior and should not affect `@probablyduncan/understory-core` or `@probablyduncan/understory-runtime`.
 
 ---
 
@@ -976,33 +988,6 @@ Where `{prefix}` is `"understory"` by default, configurable via `StoryConfig.sto
 
 ---
 
-## Display Modes
-
-These are config settings, not different component architectures. One component tree; behavior changes based on `config.displayMode`:
-
-| Mode | Behavior | Best for |
-|---|---|---|
-| `stream` | Nodes appear continuously, auto-advance after typewriter animation completes | Cinematic feel, default experience |
-| `paged` | One node at a time, user presses continue (click/space/enter) to advance | Screen readers, careful readers, accessibility |
-| `instant` | All text appears immediately (no typewriter), auto-advance, only pauses on choices | Speed readers, replaying |
-
-**Implementation contract (for the Solid component layer):**
-
-After the engine emits a `render` event and the component finishes displaying that node:
-- `stream`: automatically tell the engine to continue (trigger next traversal)
-- `paged`: show a continue affordance, wait for user input, then tell the engine to continue
-- `instant`: skip animation entirely, immediately tell the engine to continue
-
-The engine itself does NOT know about display modes. It emits events; the UI decides pacing. This keeps display mode logic entirely in `@probablyduncan/understory-astro` components.
-
-**Accessibility notes:**
-- `paged` mode: new content announced via ARIA live region when continue is pressed
-- `stream` mode: content added to ARIA live region as each node completes
-- `instant` mode: all content present in DOM immediately, screen reader navigates normally
-- All modes: choices are focusable buttons with descriptive labels
-
----
-
 ## CSS & Theming
 
 ### Architecture: Cascade Layers
@@ -1013,27 +998,27 @@ All styles from `@probablyduncan/understory-astro` are wrapped in a CSS cascade 
 /* Inside @probablyduncan/understory-astro's global.css */
 @layer understory {
     :root {
-        --st-color-bg: #1a1a1a;
-        --st-color-text: #e0e0e0;
-        --st-color-accent: #4a9eff;
-        --st-color-muted: #666;
-        --st-font-body: Georgia, serif;
-        --st-font-size-base: 1.125rem;
-        --st-font-size-sm: 0.875rem;
-        --st-font-size-lg: 1.375rem;
-        --st-line-height: 1.6;
-        --st-max-width: 65ch;
-        --st-spacing-node: 1.5rem;
-        --st-spacing-choice: 0.75rem;
-        --st-timing-char: 80ms;
-        --st-timing-pause: 480ms;
-        --st-timing-fade: 200ms;
-        --st-radius: 4px;
+        --us-color-bg: #1a1a1a;
+        --us-color-text: #e0e0e0;
+        --us-color-accent: #4a9eff;
+        --us-color-muted: #666;
+        --us-font-body: Georgia, serif;
+        --us-font-size-base: 1.125rem;
+        --us-font-size-sm: 0.875rem;
+        --us-font-size-lg: 1.375rem;
+        --us-line-height: 1.6;
+        --us-max-width: 65ch;
+        --us-spacing-node: 1.5rem;
+        --us-spacing-choice: 0.75rem;
+        --us-timing-char: 80ms;
+        --us-timing-pause: 480ms;
+        --us-timing-fade: 200ms;
+        --us-radius: 4px;
     }
 
     /* All component styles use these variables */
-    .st-text { color: var(--st-color-text); }
-    .st-choice { color: var(--st-color-accent); }
+    .st-text { color: var(--us-color-text); }
+    .st-choice { color: var(--us-color-accent); }
     /* etc. */
 }
 ```
@@ -1045,11 +1030,11 @@ Users override variables by providing a CSS file in their project. This file is 
 ```css
 /* my-story/custom.css */
 :root {
-    --st-color-bg: #f5f5dc;
-    --st-color-text: #2c2c2c;
-    --st-color-accent: #8b0000;
-    --st-font-body: "Courier New", monospace;
-    --st-max-width: 50ch;
+    --us-color-bg: #f5f5dc;
+    --us-color-text: #2c2c2c;
+    --us-color-accent: #8b0000;
+    --us-font-body: "Courier New", monospace;
+    --us-max-width: 50ch;
 }
 ```
 
@@ -1057,7 +1042,7 @@ Referenced in config:
 ```typescript
 export default defineStoryConfig({
     startScene: "intro",
-    customCss: "./custom.css",
+    stylesheet: "./custom.css",
 });
 ```
 
@@ -1070,57 +1055,35 @@ Themes are sets of variable overrides applied via `[data-theme]` attribute:
 ```css
 @layer understory {
     [data-theme="terminal"] {
-        --st-color-bg: #0d1117;
-        --st-color-text: #00ff41;
-        --st-font-body: "Fira Code", monospace;
+        --us-color-bg: #0d1117;
+        --us-color-text: #00ff41;
+        --us-font-body: "Fira Code", monospace;
     }
 
     [data-theme="paper"] {
-        --st-color-bg: #faf9f6;
-        --st-color-text: #333;
-        --st-font-body: "Libre Baskerville", serif;
+        --us-color-bg: #faf9f6;
+        --us-color-text: #333;
+        --us-font-body: "Libre Baskerville", serif;
     }
 
     [data-theme="minimal"] {
-        --st-color-bg: #fff;
-        --st-color-text: #111;
-        --st-font-body: system-ui, sans-serif;
+        --us-color-bg: #fff;
+        --us-color-text: #111;
+        --us-font-body: system-ui, sans-serif;
     }
 }
 ```
 
-The Solid `useConfig()` binding sets `document.documentElement.dataset.theme` based on the resolved theme. Dark/light variants are handled with nested selectors:
+The Solid binding sets `document.documentElement.dataset.theme` based on the resolved theme. Dark/light variants are handled with nested selectors:
 
 ```css
 @layer understory {
     [data-theme="terminal"][data-color-scheme="light"] {
-        --st-color-bg: #f0f0f0;
-        --st-color-text: #006400;
+        --us-color-bg: #f0f0f0;
+        --us-color-text: #006400;
     }
 }
 ```
-
-### CSS Custom Properties Reference
-
-| Variable | Purpose | Default |
-|---|---|---|
-| `--st-color-bg` | Page background | `#1a1a1a` |
-| `--st-color-text` | Primary text | `#e0e0e0` |
-| `--st-color-accent` | Choices, links, interactive elements | `#4a9eff` |
-| `--st-color-muted` | Visited choices, secondary text | `#666` |
-| `--st-color-focus` | Focus ring color | `var(--st-color-accent)` |
-| `--st-font-body` | Body font stack | `Georgia, serif` |
-| `--st-font-size-base` | Base text size (maps to `config.fontSize: "md"`) | `1.125rem` |
-| `--st-font-size-sm` | Small text / `config.fontSize: "sm"` | `0.875rem` |
-| `--st-font-size-lg` | Large text / `config.fontSize: "lg"` | `1.375rem` |
-| `--st-line-height` | Body line height | `1.6` |
-| `--st-max-width` | Content column max width | `65ch` |
-| `--st-spacing-node` | Vertical gap between rendered nodes | `1.5rem` |
-| `--st-spacing-choice` | Gap between choices in a choice group | `0.75rem` |
-| `--st-timing-char` | Base time per character (typewriter) | `80ms` |
-| `--st-timing-pause` | Duration of a "pause" token | `480ms` |
-| `--st-timing-fade` | Fade-in duration for nodes | `200ms` |
-| `--st-radius` | Border radius for choice buttons, cards | `4px` |
 
 ### Reduced Motion
 
@@ -1128,15 +1091,15 @@ The Solid `useConfig()` binding sets `document.documentElement.dataset.theme` ba
 @layer understory {
     @media (prefers-reduced-motion: reduce) {
         :root {
-            --st-timing-char: 0ms;
-            --st-timing-pause: 0ms;
-            --st-timing-fade: 0ms;
+            --us-timing-char: 0ms;
+            --us-timing-pause: 0ms;
+            --us-timing-fade: 0ms;
         }
     }
 }
 ```
 
-When `config.reduceMotion` is true (either from media query or user toggle), the Solid binding also sets `--st-timing-char: 0ms` etc. programmatically, ensuring both CSS transitions and JS-driven animation loops respect the setting.
+When `config.reduceMotion` is true (either from media query or user toggle), the Solid binding also sets `--us-timing-char: 0ms` etc. programmatically, ensuring both CSS transitions and JS-driven animation loops respect the setting.
 
 ### Class Naming Convention
 
@@ -1236,19 +1199,9 @@ understory/
 │       │   │       └── scenes/
 │       │   │           └── [id].json.ts # Static JSON endpoint per scene
 │       │   ├── layouts/
-│       │   │   └── StoryLayout.astro    # Base HTML layout (head, body, script injection)
-│       │   ├── components/
-│       │   │   ├── StoryRoot.tsx        # Top-level Solid provider + engine init
-│       │   │   ├── DialoguePanel.tsx    # Renders node list, handles display mode
-│       │   │   ├── ChoiceList.tsx       # Choice buttons + keyboard nav
-│       │   │   ├── TextNode.tsx         # Single text node + typewriter animation
-│       │   │   ├── ImageNode.tsx        # Image rendering with alt text
-│       │   │   ├── ContinuePrompt.tsx   # "Press to continue" (paged mode)
-│       │   │   ├── SettingsPanel.tsx    # User config UI (includes speed control)
-│       │   │   ├── DebugPanel.tsx       # Full debug interface
-│       │   │   ├── ScenePicker.tsx      # Scene/node search + jump
-│       │   │   ├── VariableEditor.tsx   # State variable inputs (bool/string/number)
-│       │   │   └── SpeedToggle.tsx      # Standalone quick speed control
+│       │   │   ├── StoryLayout.astro    # Base HTML layout (head, body, script injection)
+│       │   │   └── story/
+│       │   │       └── default.tsx      # Built-in full-screen scene layout (Solid)
 │       │   ├── engine/
 │       │   │   ├── useStoryEngine.ts    # Solid binding: engine events → signals
 │       │   │   ├── useConfig.ts         # Solid binding: config → signals + CSS vars
@@ -1294,9 +1247,11 @@ understory/
 ├── examples/
 │   └── basic-story/                     # Example project demonstrating usage
 │       ├── src/
-│       │   └── scenes/
-│       │       ├── intro.mmd
-│       │       └── chapter-1.mmd
+│       │   ├── scenes/
+│       │   │   ├── intro.mmd
+│       │   │   └── chapter-1.mmd
+│       │   └── layouts/
+│       │       └── title-card.tsx       # Example custom layout
 │       ├── astro.config.mjs
 │       ├── understory.config.ts
 │       ├── custom.css
@@ -1513,7 +1468,7 @@ understory/
       "import": "./dist/config.js"
     }
   },
-  "files": ["dist/", "src/pages/", "src/layouts/", "src/components/", "src/engine/", "src/animation/", "src/styles/"],
+  "files": ["dist/", "src/pages/", "src/layouts/", "src/engine/", "src/animation/", "src/styles/"],
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
@@ -1574,6 +1529,13 @@ pnpm --filter @probablyduncan/understory-core vitest run __tests__/mermaid-parse
 6. Export from `packages/core/src/parsers/index.ts`
 7. Add subpath export in core's `package.json`
 
+### Adding a Custom Layout
+
+1. Create a Solid layout component in the user's project (recommended: `src/layouts/<name>.tsx`)
+2. Register it in `understory.config.ts` via `StoryConfig.layouts` (preferred)
+3. Reference it from a scene using `%% layout: <name>` at the top of the `.mmd` file
+4. Layout handles its own transitions and controls when to begin/end engine rendering
+
 ### Adding a Custom Node Handler
 
 1. Add the handler function in `packages/astro/src/engine/customNodes.ts`
@@ -1603,7 +1565,7 @@ pnpm --filter @probablyduncan/understory-core vitest run __tests__/mermaid-parse
 |---|---|---|
 | `@probablyduncan/understory-core` | runtime (workspace) | Parsers, types, validation |
 | `@probablyduncan/understory-runtime` | runtime (workspace) | Engine, config store |
-| `solid-js` | runtime | UI reactivity |
+| `solid-js` | runtime | UI reactivity + layouts |
 | `astro` | peer | Framework (user provides) |
 | `@astrojs/solid-js` | peer | Solid integration for Astro (user provides) |
 | `vitest` | dev | Unit testing |
@@ -1766,7 +1728,7 @@ pnpm changeset
 | Manages user config (speed, theme, etc.) | `@probablyduncan/understory-runtime` |
 | Reads files from disk | `@probablyduncan/understory-astro` |
 | Uses Astro APIs (`injectRoute`, content loader) | `@probablyduncan/understory-astro` |
-| Renders UI with SolidJS | `@probablyduncan/understory-astro` |
+| Renders UI with SolidJS (including layouts) | `@probablyduncan/understory-astro` |
 | Applies CSS / manages themes | `@probablyduncan/understory-astro` |
 | Uses DOM APIs (`document`, `window`) | `@probablyduncan/understory-astro` |
 
@@ -1789,24 +1751,27 @@ core ← runtime ← astro
 
 3. **`resolveNext` (the traverser) must be pure.** Given `(children, scene, gameState)` → returns `TraversalResult`. No mutations, no async, no side effects. The `StoryEngine` wraps it with side effects.
 
-4. **UI components never contain game logic.** Components call `engine.choose()`, `engine.goToNode()`, etc. They do NOT evaluate state conditions, traverse nodes, or mutate game state. They only read signals and render.
+4. **UI code never contains game logic.** UI calls `engine.choose()`, `engine.goToNode()`, etc. UI does NOT evaluate state conditions, traverse nodes, or mutate game state directly. UI only reads signals/state and renders.
 
 5. **Config vs save state are separate concerns.** Different storage keys. Different stores. Config survives `engine.reset()`.
 
-6. **Display mode logic lives in the component layer.** The engine emits events ("here's a node"). The component decides whether to auto-advance or wait for user input based on config. The engine does not know about display modes.
+6. **Display mode logic lives in the UI layer.** The engine emits events ("here's a node"). The UI decides whether to auto-advance or wait for user input based on config. The engine does not know about display modes.
 
-7. **Use workspace protocol for internal deps.** Always `"@probablyduncan/understory-core": "workspace:*"`, never a pinned version.
+7. **Layouts own transitions.** Layout components are responsible for coordinating when the engine begins rendering (after entry transitions) and when it stops rendering (before exit transitions). Keep transition and layout concerns out of `@probablyduncan/understory-runtime`.
 
-8. **CSS classes are prefixed `st-`.** All component styles use custom properties from the `understory` cascade layer.
+8. **Use workspace protocol for internal deps.** Always `"@probablyduncan/understory-core": "workspace:*"`, never a pinned version.
 
-9. **Commit messages use conventional commits.** Format: `feat(core): add mermaid parser`, `fix(runtime): handle empty scene path`, `test(astro): add E2E for save/load`.
+9. **CSS classes are prefixed `st-`.** All component styles use custom properties from the `understory` cascade layer.
 
-10. **Error handling:** Parsers throw `ParseError` with line numbers. The integration catches and logs without crashing. The engine emits `error` events — never throws in async traversal.
+10. **Commit messages use conventional commits.** Format: `feat(core): add mermaid parser`, `fix(runtime): handle empty scene path`, `test(astro): add E2E for save/load`.
+
+11. **Error handling:** Parsers throw `ParseError` with line numbers. The integration catches and logs without crashing. The engine emits `error` events — never throws in async traversal.
 
 ### Package build order:
 ```
 core → runtime → astro
 ```
+
 Turborepo handles this automatically via `dependsOn: ["^build"]`. If making changes across packages manually, always build in this order.
 
 ### Testing commands:
@@ -1832,9 +1797,9 @@ pnpm --filter @probablyduncan/understory-astro -- playwright test e2e/navigation
 
 ### Implementation order for v1:
 
-1. **@probablyduncan/understory-core** — types → schemas → inline markdown util → smart quotes → mermaid tokenizer → edge text parser → node builder → mermaid parser (integration of above) → validation
-2. **@probablyduncan/understory-runtime** — event bus → game state → traverser → config store → save manager → engine (integration of above)
-3. **@probablyduncan/understory-astro** — integration entry + config helper → content loader → JSON endpoints → route injection → Solid bindings (useStoryEngine, useConfig, context) → components (TextNode → DialoguePanel → ChoiceList → SettingsPanel → DebugPanel) → styles/themes
+1. **@probablyduncan/understory-core** — types → schemas → inline markdown util → smart quotes → mermaid tokenizer → edge text parser → node builder → mermaid parser → validation
+2. **@probablyduncan/understory-runtime** — event bus → game state → traverser → config store → save manager → engine
+3. **@probablyduncan/understory-astro** — integration entry + config helper → content loader → JSON endpoints → route injection → layout system → Solid bindings → rendering → styles/themes
 4. **examples/basic-story** — validate everything works end-to-end
 5. **CI/CD** — GitHub Actions workflows, changeset config
 
