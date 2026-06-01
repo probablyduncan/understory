@@ -670,12 +670,7 @@ type EdgeInfo = {
 
 **Edge head → Semantics:**
 
-| Head | Syntax | Meaning |
-|---|---|---|
-| Arrow | `-->` | Standard traversal to next node |
-| Circle | `--o` | Hint that target is a choice. If target vertex has `[]` shape, override to `ChoiceNode`. If target already has `()`, redundant. |
-| Cross | `--x` | Reserved for future use. Treated as standard traversal for now. |
-| Open | `---` | Standard traversal (no arrowhead rendered in preview, but functionally identical to `-->`) |
+All edge heads are the same (`-->`, `--x`, `--o`, etc). They may be used in the future, but do not indicate anything currently.
 
 **Edge stroke → Delay style:**
 
@@ -823,9 +818,9 @@ The parser resolves certain vertex texts to non-text node types based on `Parser
 flowchart TD
     begin --> a[The barista looks up.]
     a --> b[What can I get you?]
-    b --o c(A coffee, please.)
-    b --o d(Nothing, just looking.)
-    b --o|!| e(Is that a real sword?)
+    b --> c(A coffee, please.)
+    b --> d(Nothing, just looking.)
+    b -->|!| e(Is that a real sword?)
 
     c -->|+orderedCoffee| f[Coming right up.]
     f --> g{waitRandom}
@@ -839,8 +834,8 @@ flowchart TD
     e -->|+askedAboutSword| l[He glances down at his hip.]
     l --> clear
     clear --> m[Yeah. You want to hold it?]
-    m --o n(Sure.)
-    m --o o(No thanks.)
+    m --> n(Sure.)
+    m --> o(No thanks.)
 ```
 
 ### Error Handling
