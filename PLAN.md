@@ -290,7 +290,6 @@ interface StorageAdapter {
 
 **Exports:**
 - All types listed in the Schema section above
-- Zod schemas matching those types (for runtime validation of parsed output)
 - `Parser` interface
 - Built-in parsers (mermaid v1)
 - `validateScene(scene: Scene): ValidationResult` — checks for dead ends, missing node references, unreachable nodes, undefined vars
@@ -311,11 +310,9 @@ type ParserOptions = {
 ```
 
 **Key constraints:**
-- Dependencies: `zod` only. Inline markdown parsing is implemented within this package (a small utility, not an external dependency — the subset needed is just bold, italic, code, and links).
 - No Node.js APIs (no `fs`, no `path`) — parsers receive string content, not file paths
 - No DOM APIs
 - Synchronous parse functions — the integration layer handles async file reading
-- Uses `zod` directly, NOT `astro/zod`
 
 **Testing strategy:**
 - Unit tests per parser with fixture files (`.mmd` files in a `__fixtures__` directory)
@@ -327,9 +324,8 @@ type ParserOptions = {
 
 **Entry points:**
 ```
-@probablyduncan/understory-core           → types + validation + schemas
+@probablyduncan/understory-core           → types + validation
 @probablyduncan/understory-core/parsers   → all built-in parsers + Parser interface
-@probablyduncan/understory-core/mermaid   → mermaid parser specifically
 ```
 
 ---
@@ -1166,7 +1162,6 @@ understory/
 │   │   ├── src/
 │   │   │   ├── index.ts                 # Main entry: re-exports types, validation, schemas
 │   │   │   ├── types.ts                 # All type definitions (StoryNode, Scene, etc.)
-│   │   │   ├── schemas.ts               # Zod schemas matching the types
 │   │   │   ├── validation.ts            # validateScene, validateStory
 │   │   │   ├── parsers/
 │   │   │   │   ├── index.ts             # Exports Parser interface + all built-in parsers
@@ -1464,9 +1459,6 @@ understory/
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "dependencies": {
-    "zod": "^3.23.0"
-  },
   "devDependencies": {
     "vitest": "^3.2.0",
     "typescript": "^5.5.0"
@@ -1596,7 +1588,6 @@ pnpm --filter @probablyduncan/understory-core vitest run __tests__/mermaid-parse
 ### @probablyduncan/understory-core
 | Dependency | Type | Purpose |
 |---|---|---|
-| `zod` | runtime | Schema validation, type inference |
 | `vitest` | dev | Testing |
 | `typescript` | dev | Build |
 
