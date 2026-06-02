@@ -6,6 +6,7 @@
     "test:watch": "turbo test:watch",
     "test:e2e": "turbo test:e2e",
     "dev": "turbo dev",
+    "example": "pnpm build && pnpm --filter basic-story dev",
     "changeset": "changeset",
     "release": "changeset publish"
   },

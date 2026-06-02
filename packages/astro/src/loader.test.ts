@@ -4,10 +4,10 @@ import { join, dirname } from "node:path";
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { loadContent } from "./loader.js";
-import { MermaidParser } from "@probablyduncan/understory-core";
+import { MermaidFlowchartParser } from "@probablyduncan/understory-core";
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "__fixtures__");
-const parser = new MermaidParser();
+const parser = new MermaidFlowchartParser();
 
 function fixtureRoot(subdir: string = "") {
     return pathToFileURL(join(FIXTURES_DIR, subdir) + "/");
@@ -19,6 +19,7 @@ describe("loadContent", () => {
             const { content } = await loadContent(
                 [{ dir: "images", type: "images" }],
                 fixtureRoot(),
+                "intro.mmd",
             );
             expect(content.images).toContain("sword.webp");
             expect(content.images).toContain("forest.png");
@@ -30,6 +31,7 @@ describe("loadContent", () => {
             const { content } = await loadContent(
                 [{ dir: "custom", type: "custom" }],
                 fixtureRoot(),
+                "intro.mmd",
             );
             expect(content.custom).toContain("MyRenderer");
         });
@@ -38,6 +40,7 @@ describe("loadContent", () => {
             const { content } = await loadContent(
                 [{ dir: "images", type: "images", extensions: [".webp"] }],
                 fixtureRoot(),
+                "intro.mmd",
             );
             expect(content.images).toContain("sword.webp");
             expect(content.images).not.toContain("forest.png");
@@ -47,6 +50,7 @@ describe("loadContent", () => {
             const { content } = await loadContent(
                 [{ dir: "nonexistent", type: "images" }],
                 fixtureRoot(),
+                "intro.mmd",
             );
             expect(content.images.size).toBe(0);
         });
@@ -57,6 +61,7 @@ describe("loadContent", () => {
             const { content, scenes } = await loadContent(
                 [{ dir: "scenes", type: "scenes", parser }],
                 fixtureRoot(),
+                "intro.mmd",
             );
             expect(content.scenes).toContain("intro.mmd");
             expect(content.scenes).toContain("chapter1.mmd");
@@ -68,6 +73,7 @@ describe("loadContent", () => {
             const { scenes } = await loadContent(
                 [{ dir: "scenes", type: "scenes", parser }],
                 fixtureRoot(),
+                "intro.mmd",
             );
             expect(scenes.map((s) => s.id)).toContain("intro.mmd");
         });
@@ -76,6 +82,7 @@ describe("loadContent", () => {
             const { scenes } = await loadContent(
                 [{ dir: "scenes", type: "scenes", parser }],
                 fixtureRoot(),
+                "intro.mmd",
             );
             const broken = scenes.find((s) => s.id === "broken.mmd");
             expect(broken).toBeDefined();
@@ -88,6 +95,7 @@ describe("loadContent", () => {
             const { content } = await loadContent(
                 [{ dir: "scenes", type: "scenes", parser }],
                 fixtureRoot(),
+                "intro.mmd",
             );
             // parser.extensions = [".mmd"], so only .mmd files should appear
             for (const id of content.scenes) {
@@ -102,6 +110,7 @@ describe("loadContent", () => {
                     { dir: "images", type: "images" },
                 ],
                 fixtureRoot(),
+                "intro.mmd",
             );
             const intro = scenes.find((s) => s.id === "intro.mmd");
             expect(intro?.scene).not.toBeNull();
@@ -133,6 +142,7 @@ describe("loadContent", () => {
                         { dir: "b", type: "scenes", parser },
                     ],
                     pathToFileURL(tmp + "/"),
+                    "intro.mmd",
                 );
 
                 // Only one scene with id "dupe.mmd" should be present

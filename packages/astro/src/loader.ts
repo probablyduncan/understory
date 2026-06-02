@@ -40,7 +40,7 @@ async function scanDir(dirPath: string, extensions: string[]): Promise<string[]>
 export async function loadContent(
     sources: ContentSource[],
     root: URL,
-    startSceneId?: string,
+    startSceneId: string,
 ): Promise<{ content: LoadedContent; scenes: LoadedScene[] }> {
     const rootDir = fileURLToPath(root);
 

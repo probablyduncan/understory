@@ -2,6 +2,9 @@ import type { AstroIntegration } from "astro";
 import type { UnderstoryConfig } from "./config.js";
 import { loadContent } from "./loader.js";
 
+export * from "@probablyduncan/understory-core";
+export * from "@probablyduncan/understory-runtime";
+
 export default function understory(config: UnderstoryConfig): AstroIntegration {
     return {
         name: "@probablyduncan/understory",
@@ -20,5 +23,3 @@ export default function understory(config: UnderstoryConfig): AstroIntegration {
         },
     };
 }
-
-export { defineUnderstoryConfig } from "./config.js";

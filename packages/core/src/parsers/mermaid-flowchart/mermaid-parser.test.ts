@@ -76,7 +76,7 @@ flowchart TD
     leave --> return
 `;
 
-describe("MermaidParser", () => {
+describe("MermaidFlowchartParser", () => {
     describe("BASIC — barista scene", () => {
         const scene = parser.parseScene("barista", BASIC).scene!;
 

@@ -25,7 +25,3 @@ export type UnderstoryConfig = {
     startSceneId: string;
     content: ContentSource[];
 };
-
-export function defineUnderstoryConfig(config: UnderstoryConfig): UnderstoryConfig {
-    return config;
-}
