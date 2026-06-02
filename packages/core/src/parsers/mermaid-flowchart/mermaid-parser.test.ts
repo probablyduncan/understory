@@ -276,20 +276,20 @@ describe("MermaidParser", () => {
     describe("asset resolution", () => {
         it("text matching a scene asset becomes SceneNode", () => {
             const content = "flowchart TD\n    begin --> a\n    a --> portal[[chapter2.mmd]]";
-            const scene = parser.parseScene("intro", content, { assets: new Map([["chapter2.mmd", "scene" as const]]) }).scene!;
+            const scene = parser.parseScene("intro", content, { scenes: new Set(["chapter2.mmd"]) }).scene!;
             expect(scene.nodes["portal"]?.type).toBe("scene");
             expect((scene.nodes["portal"] as { sceneId: string }).sceneId).toBe("chapter2.mmd");
         });
 
         it("text matching an image asset becomes ImageNode", () => {
             const content = "flowchart TD\n    begin --> a\n    a --> img[sword.webp]";
-            const scene = parser.parseScene("battle", content, { assets: new Map([["sword.webp", "image" as const]]) }).scene!;
+            const scene = parser.parseScene("battle", content, { images: new Set(["sword.webp"]) }).scene!;
             expect(scene.nodes["img"]?.type).toBe("image");
         });
 
         it("square brackets can match scene asset (shape doesn't matter)", () => {
             const content = "flowchart TD\n    begin --> a[chapter2.mmd]";
-            const scene = parser.parseScene("intro", content, { assets: new Map([["chapter2.mmd", "scene" as const]]) }).scene!;
+            const scene = parser.parseScene("intro", content, { scenes: new Set(["chapter2.mmd"]) }).scene!;
             expect(scene.nodes["a"]?.type).toBe("scene");
         });
     });

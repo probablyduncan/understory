@@ -4,6 +4,8 @@ import { tokenize } from "./tokenizer.js";
 import { buildScene } from "./nodeBuilder.js";
 
 export class MermaidFlowchartParser implements Parser {
+    extensions = [".mmd"];
+
     parseScene(id: string, content: string, options?: ParserOptions): ParseResult {
         try {
             const { vertices, edges, layout } = tokenize(content);

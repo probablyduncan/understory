@@ -85,7 +85,7 @@ function validateScene(scene: Scene): StoryIssue[] {
     return issues;
 }
 
-export function validateScenes(scenes: Scene | Scene[]): ValidationResult {
+export function validateScenes(scenes: Scene | Scene[], startSceneId: string): ValidationResult {
     const arr = Array.isArray(scenes) ? scenes : [scenes];
     const issues: StoryIssue[] = [];
 
@@ -114,12 +114,28 @@ export function validateScenes(scenes: Scene | Scene[]): ValidationResult {
     }
 
     if (arr.length > 1) {
+        // BFS from startSceneId — any scene not reachable is orphaned
+        const sceneMap = new Map(arr.map((s) => [s.id, s]));
+        const reachable = new Set<string>();
+        const queue = [startSceneId];
+        while (queue.length > 0) {
+            const id = queue.shift()!;
+            if (reachable.has(id)) continue;
+            reachable.add(id);
+            const scene = sceneMap.get(id);
+            if (!scene) continue;
+            for (const node of Object.values(scene.nodes)) {
+                if (node.type === "scene" && !reachable.has(node.sceneId)) {
+                    queue.push(node.sceneId);
+                }
+            }
+        }
         for (const scene of arr) {
-            if (!referencedSceneIds.has(scene.id)) {
+            if (!reachable.has(scene.id)) {
                 issues.push({
                     severity: "warning",
                     code: "orphan_scene",
-                    message: `Scene "${scene.id}" is not referenced by any other scene`,
+                    message: `Scene "${scene.id}" is not reachable from start scene "${startSceneId}"`,
                     sceneId: scene.id,
                 });
             }

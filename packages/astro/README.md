@@ -20,9 +20,9 @@ export default defineConfig({
 
 **understory.config.ts (optional):**
 ```typescript
-import { defineStoryConfig } from "@probablyduncan/understory-astro/config";
+import { defineUnderstoryConfig } from "@probablyduncan/understory-astro/config";
 
-export default defineStoryConfig({
+export default defineUnderstoryConfig({
     scenes: "src/scenes",
     startScene: "intro",
     debug: true,
@@ -36,10 +36,10 @@ export default defineStoryConfig({
 If no config file exists and `startScene` is not provided, the integration throws at build time:
 > `UnderstoryConfigError: startScene is required. Create an understory.config.ts file in your project root.`
 
-## StoryConfig
+## UnderstoryConfig
 
 ```typescript
-type StoryConfig = {
+type UnderstoryConfig = {
     scenes?: string;             // default: "src/scenes"
     parsers?: Parser[];          // default: [mermaid()]
     startScene: string;          // required
@@ -72,14 +72,14 @@ Scenes choose a layout via a front-matter comment:
 
 Resolution order:
 1. `scene.layout` (from the `.mmd` file)
-2. `StoryConfig.defaultLayout`
+2. `UnderstoryConfig.defaultLayout`
 3. Package's built-in default layout
 
 Custom layouts can be registered in `understory.config.ts`:
 ```typescript
 import TitleCard from "./src/layouts/title-card.tsx";
 
-export default defineStoryConfig({
+export default defineUnderstoryConfig({
     startScene: "intro",
     layouts: { "title-card": TitleCard },
 });

@@ -2,7 +2,9 @@ import type { Scene } from "../types.js";
 import type { StoryIssue } from "./validation.js";
 
 export type ParserOptions = {
-    assets?: Map<string, "image" | "custom" | "scene">;
+    scenes?: Set<string>;
+    images?: Set<string>;
+    custom?: Set<string>;
 };
 
 export type ParseResult = {
@@ -11,6 +13,7 @@ export type ParseResult = {
 };
 
 export interface Parser {
+    extensions: string[];
     parseScene(id: string, content: string, options?: ParserOptions): ParseResult;
 }
 

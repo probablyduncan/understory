@@ -138,7 +138,7 @@ The package exports an `understory()` function that returns an Astro integration
 
 **Integration responsibilities:**
 - `understory()` — Astro integration function
-- `defineStoryConfig()` — typed config helper, exported from the `./config` subpath
+- `defineUnderstoryConfig()` — typed config helper, exported from the `./config` subpath
 - Content loader: watches for `.mmd` files, calls parser, runs validation, logs errors without crashing dev server, re-parses only changed files on watch
 - Route injection:
   - `GET /api/scenes/[id].json` — static endpoint per scene (prerendered at build)

@@ -72,7 +72,7 @@ function classifyReservedId(id: string, shape: string): "begin" | "return" | "cl
 function buildNode(
     id: string,
     vertex: VertexInfo,
-    assets: Map<string, "image" | "custom" | "scene"> | undefined,
+    options: ParserOptions | undefined,
 ): StoryNode {
     const reserved = classifyReservedId(id, vertex.shape);
 
@@ -90,16 +90,15 @@ function buildNode(
     }
 
     // Asset resolution: text content takes precedence over bracket shape
-    if (vertex.text !== undefined && assets) {
-        const assetType = assets.get(vertex.text);
-        if (assetType === "image") {
+    if (vertex.text !== undefined) {
+        if (options?.scenes?.has(vertex.text)) {
+            return { type: "scene", id, sceneId: vertex.text, children: [] };
+        }
+        if (options?.images?.has(vertex.text)) {
             return { type: "image", id, src: vertex.text, alt: "", children: [] };
         }
-        if (assetType === "custom") {
+        if (options?.custom?.has(vertex.text)) {
             return { type: "custom", id, name: vertex.text, children: [] };
-        }
-        if (assetType === "scene") {
-            return { type: "scene", id, sceneId: vertex.text, children: [] };
         }
     }
 
@@ -137,8 +136,6 @@ export function buildScene(
     layout: string | undefined,
     options: ParserOptions | undefined,
 ): Scene {
-    const assets = options?.assets;
-
     // Determine entry node from `begin` edge, then remove `begin` vertex
     let entryNodeId: string | undefined;
     const beginVertex = vertices.get("begin");
@@ -163,7 +160,7 @@ export function buildScene(
     // Pass 1: build all nodes (children: [] initially)
     const nodes: Record<string, StoryNode> = {};
     for (const [id, vertex] of vertices) {
-        nodes[id] = buildNode(id, vertex, assets);
+        nodes[id] = buildNode(id, vertex, options);
     }
 
     // Pass 2: build ChildRefs and wire them to source nodes

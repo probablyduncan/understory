@@ -178,7 +178,7 @@ I'd lean toward Web Components for v1 simplicity.
 - Register content collections with custom loaders
 - Generate `/scenes/[id].json` endpoints dynamically
 - Inject the Web Components script
-- Provide config helpers (`defineStoryConfig()`)
+- Provide config helpers (`defineUnderstoryConfig()`)
 
 It should **not**:
 - Include UI components (that's the template's job)
@@ -198,7 +198,7 @@ It should **not**:
 **Config file pattern**:
 ```typescript
 // storytime.config.ts
-export default defineStoryConfig({
+export default defineUnderstoryConfig({
   parsers: [markdown(), mermaid()],
   theme: 'terminal',
   features: {
@@ -1362,7 +1362,7 @@ A user gets a working Astro site. They write `.mmd` files (or other supported fo
 │  @storytime/astro       │                                       │
 │  - Astro integration (content loader using core parsers)        │
 │  - Static JSON endpoint generation for scenes                   │
-│  - Config helper (defineStoryConfig)                            │
+│  - Config helper (defineUnderstoryConfig)                            │
 │  - Injects runtime + template scripts                           │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
@@ -1651,7 +1651,7 @@ type EngineEvents = {
 
 **Exports:**
 - `storytime()` — Astro integration function (used in `astro.config.mjs`)
-- `defineStoryConfig()` — typed config helper
+- `defineUnderstoryConfig()` — typed config helper
 
 **Responsibilities:**
 - Registers an Astro content loader that:
@@ -1665,7 +1665,7 @@ type EngineEvents = {
 
 **Config shape:**
 ```typescript
-type StoryConfig = {
+type UnderstoryConfig = {
     /** Directory containing scene files, relative to project root */
     scenes: string;
 
@@ -1941,7 +1941,7 @@ storytime/
 │   ├── astro/
 │   │   ├── src/
 │   │   │   ├── index.ts                 # storytime() integration function
-│   │   │   ├── config.ts               # defineStoryConfig, config types
+│   │   │   ├── config.ts               # defineUnderstoryConfig, config types
 │   │   │   ├── loader.ts              # Astro content loader implementation
 │   │   │   ├── endpoints.ts           # Scene JSON endpoint generation
 │   │   │   └── virtual.d.ts           # Type declarations for virtual modules
@@ -2885,7 +2885,7 @@ The user does NOT have pages, components, or layouts in their project. The integ
 │  @storytime/astro                                               │
 │  - Astro integration (content loader, route injection)          │
 │  - Static JSON endpoint generation for scenes                   │
-│  - Config helper (defineStoryConfig)                            │
+│  - Config helper (defineUnderstoryConfig)                            │
 │  - SolidJS UI components (dialogue, choices, debug panel)       │
 │  - Solid bindings for runtime engine + config                   │
 │  - CSS themes                                                   │
@@ -3210,7 +3210,7 @@ type UserConfig = {
 
 **Integration responsibilities:**
 - `storytime()` — Astro integration function (used in `astro.config.mjs`)
-- `defineStoryConfig()` — typed config helper for `storytime.config.ts`
+- `defineUnderstoryConfig()` — typed config helper for `storytime.config.ts`
 - Registers an Astro content loader that:
   - Watches scene source files (`.mmd`, etc.)
   - Reads file content, calls appropriate parser from `@storytime/core`
@@ -3259,7 +3259,7 @@ type UserConfig = {
 
 **Story config shape:**
 ```typescript
-type StoryConfig = {
+type UnderstoryConfig = {
     /** Directory containing scene files, relative to project root */
     scenes: string;
 
@@ -3569,7 +3569,7 @@ storytime/
 │   └── astro/
 │       ├── src/
 │       │   ├── index.ts                 # storytime() integration function
-│       │   ├── config.ts               # defineStoryConfig, config types
+│       │   ├── config.ts               # defineUnderstoryConfig, config types
 │       │   ├── loader.ts              # Astro content loader implementation
 │       │   ├── endpoints.ts           # Scene JSON endpoint generation
 │       │   ├── virtual.d.ts           # Type declarations for virtual modules
@@ -4229,7 +4229,7 @@ The user does NOT have pages, components, or layouts in their project. The integ
 │  @storytime/astro                                               │
 │  - Astro integration (content loader, route injection)          │
 │  - Static JSON endpoint generation for scenes                   │
-│  - Config helper (defineStoryConfig)                            │
+│  - Config helper (defineUnderstoryConfig)                            │
 │  - SolidJS UI components (dialogue, choices, debug panel)       │
 │  - Solid bindings for runtime engine + config                   │
 │  - CSS themes (vanilla CSS, cascade layers)                     │
@@ -4625,7 +4625,7 @@ The package.json `exports` map points integration consumers to compiled JS, and 
 
 **Integration responsibilities:**
 - `storytime()` — Astro integration function
-- `defineStoryConfig()` — typed config helper
+- `defineUnderstoryConfig()` — typed config helper
 - Content loader:
   - Watches `config.scenes` directory for `.mmd` files (and other registered extensions)
   - Reads file content, calls appropriate parser from `@storytime/core`
@@ -4665,7 +4665,7 @@ The package.json `exports` map points integration consumers to compiled JS, and 
 
 **Story config shape:**
 ```typescript
-type StoryConfig = {
+type UnderstoryConfig = {
     /** Directory containing scene files, relative to project root. Default: "src/scenes" */
     scenes?: string;
 
@@ -5064,7 +5064,7 @@ Users provide a CSS file path in their config:
 
 ```typescript
 // storytime.config.ts
-export default defineStoryConfig({
+export default defineUnderstoryConfig({
     startScene: "intro",
     customStyles: "./src/styles/overrides.css",
 });
@@ -5207,7 +5207,7 @@ storytime/
 │   │
 │   └── astro/
 │       ├── src/
-│       │   ├── index.ts                 # storytime() integration + defineStoryConfig
+│       │   ├── index.ts                 # storytime() integration + defineUnderstoryConfig
 │       │   ├── loader.ts              # Astro content loader: watches files, calls parsers
 │       │   ├── endpoints.ts           # Logic for generating /api/scenes/[id].json
 │       │   ├── virtual.d.ts           # Type declarations for virtual:storytime/config
@@ -5648,7 +5648,7 @@ The user does NOT have pages, components, or layouts in their project. The integ
 │  @storytime/astro                                               │
 │  - Astro integration (content loader, route injection)          │
 │  - Static JSON endpoint generation for scenes                   │
-│  - Config helper (defineStoryConfig)                            │
+│  - Config helper (defineUnderstoryConfig)                            │
 │  - SolidJS UI components (dialogue, choices, debug panel)       │
 │  - Solid bindings for runtime engine + config                   │
 │  - CSS themes via custom properties + cascade layers            │
@@ -6004,9 +6004,9 @@ export default defineConfig({
 
 **User's storytime.config.ts (optional):**
 ```typescript
-import { defineStoryConfig } from "@storytime/astro";
+import { defineUnderstoryConfig } from "@storytime/astro";
 
-export default defineStoryConfig({
+export default defineUnderstoryConfig({
     scenes: "src/scenes",
     startScene: "intro",
     debug: true,
@@ -6019,7 +6019,7 @@ export default defineStoryConfig({
 
 **Integration responsibilities:**
 - `storytime()` — Astro integration function
-- `defineStoryConfig()` — typed config helper
+- `defineUnderstoryConfig()` — typed config helper
 - Content loader:
   - Watches `config.scenes` directory for `.mmd` files (and other parser extensions)
   - Reads file content, determines parser by extension, calls `parser.parse()`
@@ -6073,7 +6073,7 @@ export default defineStoryConfig({
 
 **Story config type:**
 ```typescript
-type StoryConfig = {
+type UnderstoryConfig = {
     /** Directory containing scene files, relative to project root. Default: "src/scenes" */
     scenes?: string;
 
@@ -6327,7 +6327,7 @@ User preferences are a separate concern from game save state. They have independ
 | Named saves | `{prefix}:save:{slot}` | Only when explicitly deleted |
 | User config | `{prefix}:config` | Never (persists forever) |
 
-Where `{prefix}` is `storytime` by default, configurable via `StoryConfig.storagePrefix`.
+Where `{prefix}` is `storytime` by default, configurable via `UnderstoryConfig.storagePrefix`.
 
 **Config defaults resolution order (highest priority wins):**
 1. User's localStorage override (set via settings UI)
@@ -6421,7 +6421,7 @@ Users override variables by providing a CSS file in their project. This file is 
 
 Referenced in config:
 ```typescript
-export default defineStoryConfig({
+export default defineUnderstoryConfig({
     startScene: "intro",
     customCss: "./custom.css",
 });
@@ -6592,7 +6592,7 @@ storytime/
 │   └── astro/
 │       ├── src/
 │       │   ├── index.ts                 # storytime() integration function (main export)
-│       │   ├── config.ts               # defineStoryConfig(), StoryConfig type
+│       │   ├── config.ts               # defineUnderstoryConfig(), UnderstoryConfig type
 │       │   ├── loader.ts              # Astro content loader: watches files, calls parsers
 │       │   ├── endpoints.ts           # Logic for generating /api/scenes/[id].json
 │       │   ├── virtual.d.ts           # Type declarations for virtual:storytime/config
@@ -7626,7 +7626,7 @@ The user does NOT have pages, components, or layouts in their project. The integ
 │  @storytime/astro                                               │
 │  - Astro integration (content loader, route injection)          │
 │  - Static JSON endpoint generation for scenes                   │
-│  - Config helper (defineStoryConfig)                            │
+│  - Config helper (defineUnderstoryConfig)                            │
 │  - SolidJS UI components (dialogue, choices, debug panel)       │
 │  - Solid bindings for runtime engine + config                   │
 │  - CSS themes via custom properties + cascade layers            │
@@ -8021,7 +8021,7 @@ type SaveData = {
 - `{prefix}:save:{slotName}` — named save slots
 - `{prefix}:config` — user preferences (persists forever, survives game reset)
 
-Where `{prefix}` defaults to `"storytime"`, configurable via `StoryConfig.storagePrefix`.
+Where `{prefix}` defaults to `"storytime"`, configurable via `UnderstoryConfig.storagePrefix`.
 
 ---
 
@@ -8052,9 +8052,9 @@ export default defineConfig({
 
 **User's storytime.config.ts (optional):**
 ```typescript
-import { defineStoryConfig } from "@storytime/astro/config";
+import { defineUnderstoryConfig } from "@storytime/astro/config";
 
-export default defineStoryConfig({
+export default defineUnderstoryConfig({
     scenes: "src/scenes",
     startScene: "intro",
     debug: true,
@@ -8067,7 +8067,7 @@ export default defineStoryConfig({
 
 **Integration responsibilities:**
 - `storytime()` — Astro integration function
-- `defineStoryConfig()` — typed config helper
+- `defineUnderstoryConfig()` — typed config helper
 - Content loader:
   - Watches `config.scenes` directory for `.mmd` files (and other parser extensions)
   - Reads file content, determines parser by extension, calls `parser.parse()`
@@ -8122,7 +8122,7 @@ export default defineStoryConfig({
 
 **Story config type:**
 ```typescript
-type StoryConfig = {
+type UnderstoryConfig = {
     /** Directory containing scene files, relative to project root. Default: "src/scenes" */
     scenes?: string;
 
@@ -8744,7 +8744,7 @@ The user does NOT have pages, components, or layouts in their project. The integ
 │  @storytime/astro                                               │
 │  - Astro integration (content loader, route injection)          │
 │  - Static JSON endpoint generation for scenes                   │
-│  - Config helper (defineStoryConfig)                            │
+│  - Config helper (defineUnderstoryConfig)                            │
 │  - SolidJS UI components (dialogue, choices, debug panel)       │
 │  - Solid bindings for runtime engine + config                   │
 │  - CSS themes via custom properties + cascade layers            │
@@ -9137,9 +9137,9 @@ export default defineConfig({
 
 **User's storytime.config.ts (optional):**
 ```typescript
-import { defineStoryConfig } from "@storytime/astro/config";
+import { defineUnderstoryConfig } from "@storytime/astro/config";
 
-export default defineStoryConfig({
+export default defineUnderstoryConfig({
     scenes: "src/scenes",
     startScene: "intro",
     debug: true,
@@ -9152,7 +9152,7 @@ export default defineStoryConfig({
 
 **Integration responsibilities:**
 - `storytime()` — Astro integration function
-- `defineStoryConfig()` — typed config helper
+- `defineUnderstoryConfig()` — typed config helper
 - Content loader:
   - Watches `config.scenes` directory for `.mmd` files (and other parser extensions)
   - Reads file content, determines parser by extension, calls `parser.parse()`
@@ -9208,7 +9208,7 @@ export default defineStoryConfig({
 
 **Story config type:**
 ```typescript
-type StoryConfig = {
+type UnderstoryConfig = {
     /** Directory containing scene files, relative to project root. Default: "src/scenes" */
     scenes?: string;
 
@@ -9575,7 +9575,7 @@ User preferences are a separate concern from game save state. They have independ
 | Named saves | `{prefix}:save:{slot}` | Only when explicitly deleted |
 | User config | `{prefix}:config` | Never (persists forever) |
 
-Where `{prefix}` is `storytime` by default, configurable via `StoryConfig.storagePrefix`.
+Where `{prefix}` is `storytime` by default, configurable via `UnderstoryConfig.storagePrefix`.
 
 **Config defaults resolution order (highest priority wins):**
 1. User's localStorage override (set via settings UI)
@@ -9673,7 +9673,7 @@ Users override variables by providing a CSS file in their project. Because it's 
 
 Referenced in config:
 ```typescript
-export default defineStoryConfig({
+export default defineUnderstoryConfig({
     startScene: "intro",
     customCss: "./custom.css",
 });
@@ -9861,7 +9861,7 @@ storytime/
 │   └── astro/
 │       ├── src/
 │       │   ├── index.ts                 # storytime() integration function (main export)
-│       │   ├── config.ts               # defineStoryConfig(), StoryConfig type
+│       │   ├── config.ts               # defineUnderstoryConfig(), UnderstoryConfig type
 │       │   ├── loader.ts              # Astro content loader: watches files, calls parsers
 │       │   ├── endpoints.ts           # Logic for generating /api/scenes/[id].json
 │       │   ├── virtual.d.ts           # Type declarations for virtual:storytime/config
@@ -10568,7 +10568,7 @@ The user does NOT have pages, components, or layouts in their project. The integ
 │  @storytime/astro                                               │
 │  - Astro integration (content loader, route injection)          │
 │  - Static JSON endpoint generation for scenes                   │
-│  - Config helper (defineStoryConfig)                            │
+│  - Config helper (defineUnderstoryConfig)                            │
 │  - SolidJS UI components (dialogue, choices, debug panel)       │
 │  - Solid bindings for runtime engine + config                   │
 │  - CSS themes via custom properties + cascade layers            │
@@ -10962,9 +10962,9 @@ export default defineConfig({
 
 **User's storytime.config.ts (optional):**
 ```typescript
-import { defineStoryConfig } from "@storytime/astro/config";
+import { defineUnderstoryConfig } from "@storytime/astro/config";
 
-export default defineStoryConfig({
+export default defineUnderstoryConfig({
     scenes: "src/scenes",
     startScene: "intro",
     debug: true,
@@ -10977,7 +10977,7 @@ export default defineStoryConfig({
 
 **Integration responsibilities:**
 - `storytime()` — Astro integration function
-- `defineStoryConfig()` — typed config helper
+- `defineUnderstoryConfig()` — typed config helper
 - Content loader:
   - Watches `config.scenes` directory for `.mmd` files (and other parser extensions)
   - Reads file content, determines parser by extension, calls `parser.parse()`
@@ -11031,7 +11031,7 @@ export default defineStoryConfig({
 
 **Story config type:**
 ```typescript
-type StoryConfig = {
+type UnderstoryConfig = {
     /** Directory containing scene files, relative to project root. Default: "src/scenes" */
     scenes?: string;
 
@@ -11393,7 +11393,7 @@ User preferences are a separate concern from game save state. They have independ
 | Named saves | `{prefix}:save:{slot}` | Only when explicitly deleted |
 | User config | `{prefix}:config` | Never (persists forever) |
 
-Where `{prefix}` is `storytime` by default, configurable via `StoryConfig.storagePrefix`.
+Where `{prefix}` is `storytime` by default, configurable via `UnderstoryConfig.storagePrefix`.
 
 **Config defaults resolution order (highest priority wins):**
 1. User's localStorage override (set via settings UI)
@@ -11487,7 +11487,7 @@ Users override variables by providing a CSS file in their project. This file is 
 
 Referenced in config:
 ```typescript
-export default defineStoryConfig({
+export default defineUnderstoryConfig({
     startScene: "intro",
     customCss: "./custom.css",
 });
@@ -11665,7 +11665,7 @@ storytime/
 │   └── astro/
 │       ├── src/
 │       │   ├── index.ts                 # storytime() integration function (main export)
-│       │   ├── config.ts               # defineStoryConfig(), StoryConfig type
+│       │   ├── config.ts               # defineUnderstoryConfig(), UnderstoryConfig type
 │       │   ├── loader.ts              # Astro content loader: watches files, calls parsers
 │       │   ├── endpoints.ts           # Logic for generating /api/scenes/[id].json
 │       │   ├── virtual.d.ts           # Type declarations for virtual:storytime/config
