@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { MermaidParser } from "./index.js";
-import type { ChoiceNode, GateNode, TextNode, ClearNode } from "../../types.js";
+import { MermaidFlowchartParser } from "./index.js";
+import type { ChoiceNode, GateNode, TextNode } from "../../types.js";
 
-const parser = new MermaidParser();
+const parser = new MermaidFlowchartParser();
 
 const BASIC = `\
 %% layout: default
@@ -78,7 +78,7 @@ flowchart TD
 
 describe("MermaidParser", () => {
     describe("BASIC — barista scene", () => {
-        const scene = parser.parse(BASIC, "barista");
+        const scene = parser.parse("barista", BASIC);
 
         it("has correct scene id", () => {
             expect(scene.id).toBe("barista");
@@ -161,7 +161,7 @@ describe("MermaidParser", () => {
     });
 
     describe("CHOICES", () => {
-        const scene = parser.parse(CHOICES, "forest");
+        const scene = parser.parse("forest", CHOICES);
 
         it("entry node is 'intro'", () => {
             expect(scene.entryNodeId).toBe("intro");
@@ -201,7 +201,7 @@ describe("MermaidParser", () => {
     });
 
     describe("STATE_CONDITIONS", () => {
-        const scene = parser.parse(STATE_CONDITIONS, "shop");
+        const scene = parser.parse("shop", STATE_CONDITIONS);
 
         it("edge door -->|hasKey| open sets truthy condition", () => {
             const childOpen = scene.nodes["door"].children.find((c) => c.nodeId === "open");
@@ -276,23 +276,20 @@ describe("MermaidParser", () => {
     describe("asset resolution", () => {
         it("text matching a scene asset becomes SceneNode", () => {
             const content = "flowchart TD\n    begin --> a\n    a --> portal[[chapter2.mmd]]";
-            const assets = new Map([["chapter2.mmd", "scene" as const]]);
-            const scene = parser.parse(content, "intro", { assets });
+            const scene = parser.parse("intro", content, { assets: new Map([["chapter2.mmd", "scene" as const]]) });
             expect(scene.nodes["portal"]?.type).toBe("scene");
             expect((scene.nodes["portal"] as { sceneId: string }).sceneId).toBe("chapter2.mmd");
         });
 
         it("text matching an image asset becomes ImageNode", () => {
             const content = "flowchart TD\n    begin --> a\n    a --> img[sword.webp]";
-            const assets = new Map([["sword.webp", "image" as const]]);
-            const scene = parser.parse(content, "battle", { assets });
+            const scene = parser.parse("battle", content, { assets: new Map([["sword.webp", "image" as const]]) });
             expect(scene.nodes["img"]?.type).toBe("image");
         });
 
         it("square brackets can match scene asset (shape doesn't matter)", () => {
             const content = "flowchart TD\n    begin --> a[chapter2.mmd]";
-            const assets = new Map([["chapter2.mmd", "scene" as const]]);
-            const scene = parser.parse(content, "intro", { assets });
+            const scene = parser.parse("intro", content, { assets: new Map([["chapter2.mmd", "scene" as const]]) });
             expect(scene.nodes["a"]?.type).toBe("scene");
         });
     });
@@ -300,8 +297,8 @@ describe("MermaidParser", () => {
     describe("onChoose placement", () => {
         it("effect on edge pointing TO a ChoiceNode goes on that node's onChoose", () => {
             const scene = parser.parse(
+                "s",
                 "flowchart TD\n    begin --> a\n    a -->|+flag| b(A choice.)",
-                "s"
             );
             expect((scene.nodes["b"] as ChoiceNode).onChoose).toEqual([
                 { type: "set", name: "s:flag", value: true },
@@ -310,8 +307,8 @@ describe("MermaidParser", () => {
 
         it("effect on edge pointing to a TextNode stays on ChildRef.effects", () => {
             const scene = parser.parse(
+                "s",
                 "flowchart TD\n    begin --> a(A choice.)\n    a -->|+flag| b[Result.]",
-                "s"
             );
             const childB = scene.nodes["a"].children.find((c) => c.nodeId === "b");
             expect(childB?.effects).toEqual([{ type: "set", name: "s:flag", value: true }]);
@@ -321,8 +318,8 @@ describe("MermaidParser", () => {
     describe("scope prefixing", () => {
         it("variables with ':' are not re-prefixed", () => {
             const scene = parser.parse(
+                "myscene",
                 "flowchart TD\n    begin --> a\n    a -->|global:flag| b",
-                "myscene"
             );
             expect(scene.nodes["a"].children[0].conditions).toEqual([
                 { type: "check", name: "global:flag", op: "truthy" },
@@ -331,8 +328,8 @@ describe("MermaidParser", () => {
 
         it("variables without ':' get scene prefix", () => {
             const scene = parser.parse(
+                "myscene",
                 "flowchart TD\n    begin --> a\n    a -->|myVar| b",
-                "myscene"
             );
             expect(scene.nodes["a"].children[0].conditions).toEqual([
                 { type: "check", name: "myscene:myVar", op: "truthy" },
@@ -342,39 +339,39 @@ describe("MermaidParser", () => {
 
     describe("delay from edge stroke", () => {
         it("normal --> gets dots delay, beats=0", () => {
-            const scene = parser.parse("begin --> a\na --> b", "s");
+            const scene = parser.parse("s", "begin --> a\na --> b");
             expect(scene.nodes["a"].children[0].delay).toEqual({ beats: 0, style: "dots" });
         });
 
         it("longer ---> gets beats=1", () => {
-            const scene = parser.parse("begin --> a\na ---> b", "s");
+            const scene = parser.parse("s", "begin --> a\na ---> b");
             expect(scene.nodes["a"].children[0].delay).toEqual({ beats: 1, style: "dots" });
         });
 
         it("thick ==> gets pause delay", () => {
-            const scene = parser.parse("begin --> a\na ==> b", "s");
+            const scene = parser.parse("s", "begin --> a\na ==> b");
             expect(scene.nodes["a"].children[0].delay).toEqual({ beats: 0, style: "pause" });
         });
 
         it("dotted -.-> gets fade delay", () => {
-            const scene = parser.parse("begin --> a\na -.-> b", "s");
+            const scene = parser.parse("s", "begin --> a\na -.-> b");
             expect(scene.nodes["a"].children[0].delay).toEqual({ beats: 0, style: "fade" });
         });
 
         it("invisible ~~~ produces no delay", () => {
-            const scene = parser.parse("begin --> a\na ~~~ b", "s");
+            const scene = parser.parse("s", "begin --> a\na ~~~ b");
             expect(scene.nodes["a"].children[0].delay).toBeUndefined();
         });
     });
 
     describe("entry node detection", () => {
         it("uses begin --> x to set entry node", () => {
-            const scene = parser.parse("begin --> a[Hello]\na --> b", "s");
+            const scene = parser.parse("s", "begin --> a[Hello]\na --> b");
             expect(scene.entryNodeId).toBe("a");
         });
 
         it("falls back to source of first edge when no begin", () => {
-            const scene = parser.parse("a[Hello] --> b", "s");
+            const scene = parser.parse("s", "a[Hello] --> b");
             expect(scene.entryNodeId).toBe("a");
         });
     });

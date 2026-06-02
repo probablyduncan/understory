@@ -1,6 +1,6 @@
-import type { StateCondition, StateEffect, StateValue } from "../../types.js";
+import type { StateCondition, StateEffect, StateValue } from "../types.js";
 
-export type ParsedConditionals = {
+export type ParsedStateExpression = {
     conditions: StateCondition[];
     effects: StateEffect[];
     once: boolean;
@@ -110,7 +110,7 @@ function classifyToken(text: string): Leaf {
     return { kind: "condition", value: { type: "check", name: text.trim(), op: "truthy" } };
 }
 
-export function parseConditionals(text: string): ParsedConditionals {
+export function parseStateExpression(text: string): ParsedStateExpression {
     const trimmed = text.trim();
     if (!trimmed) return { conditions: [], effects: [], once: false };
 

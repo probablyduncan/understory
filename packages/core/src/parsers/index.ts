@@ -3,13 +3,12 @@ import type { Scene } from "../types.js";
 export type { Scene };
 
 export type ParserOptions = {
-    /** Map of asset names to their types. Node text matching a key overrides shape-based type resolution. */
     assets?: Map<string, "image" | "custom" | "scene">;
 };
 
 export interface Parser {
     extensions: string[];
-    parse(content: string, id: string, options?: ParserOptions): Scene;
+    parse(id: string, content: string, options?: ParserOptions): Scene;
 }
 
 export class ParseError extends Error {
@@ -21,4 +20,4 @@ export class ParseError extends Error {
     }
 }
 
-export { MermaidParser } from "./mermaid-flowchart/index.js";
+export { MermaidFlowchartParser } from "./mermaid-flowchart/index.js";

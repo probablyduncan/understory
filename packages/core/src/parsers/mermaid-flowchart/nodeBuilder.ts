@@ -6,10 +6,10 @@ import type {
     StateEffect,
     ChoiceNode,
 } from "../../types.js";
-import type { ParserOptions } from "../index.js";
 import { ParseError } from "../index.js";
+import type { ParserOptions } from "../index.js";
 import type { VertexInfo, EdgeInfo } from "./tokenizer.js";
-import { parseConditionals } from "./conditionals.js";
+import { parseStateExpression } from "../stateExpression.js";
 
 // --- Shape and stroke mappings (internal) ---
 
@@ -224,7 +224,7 @@ function buildChildRef(
 
     // Parse edge text
     if (edge.text !== undefined && edge.text !== "") {
-        const parsed = parseConditionals(edge.text);
+        const parsed = parseStateExpression(edge.text);
 
         const conditions = parsed.conditions.map((c) => prefixCondition(c, sceneId));
         const effects = parsed.effects.map((e) => prefixEffect(e, sceneId));

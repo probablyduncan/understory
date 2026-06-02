@@ -3,10 +3,10 @@ import type { Parser, ParserOptions } from "../index.js";
 import { tokenize } from "./tokenizer.js";
 import { buildScene } from "./nodeBuilder.js";
 
-export class MermaidParser implements Parser {
+export class MermaidFlowchartParser implements Parser {
     readonly extensions = [".mmd"];
 
-    parse(content: string, id: string, options?: ParserOptions): Scene {
+    parse(id: string, content: string, options?: ParserOptions): Scene {
         const { vertices, edges, layout } = tokenize(content);
         return buildScene(id, vertices, edges, layout, options);
     }
