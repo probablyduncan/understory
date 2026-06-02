@@ -1,13 +1,22 @@
-import type { Scene } from "../../types.js";
-import type { Parser, ParserOptions } from "../index.js";
+import type { Parser, ParserOptions, ParseResult } from "../index.js";
+import { ParseError } from "../index.js";
 import { tokenize } from "./tokenizer.js";
 import { buildScene } from "./nodeBuilder.js";
 
 export class MermaidFlowchartParser implements Parser {
-    readonly extensions = [".mmd"];
-
-    parse(id: string, content: string, options?: ParserOptions): Scene {
-        const { vertices, edges, layout } = tokenize(content);
-        return buildScene(id, vertices, edges, layout, options);
+    parseScene(id: string, content: string, options?: ParserOptions): ParseResult {
+        try {
+            const { vertices, edges, layout } = tokenize(content);
+            const scene = buildScene(id, vertices, edges, layout, options);
+            return { scene, issues: [] };
+        } catch (e) {
+            if (e instanceof ParseError) {
+                return {
+                    scene: null,
+                    issues: [{ severity: "error", code: "parse_error", message: e.rawMessage, line: e.line }],
+                };
+            }
+            throw e;
+        }
     }
 }

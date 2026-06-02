@@ -1,14 +1,3 @@
-understory-core is a pure typescript library (no node, no dom, no framework deps) which defines types and parsers for the underlying data that defines a story.
-
-ships built-in parsers
-exposes story validation utility
-
-validation:
-
-a function that takes in a list of scene objects and validates that their nodes are all valid, 
-
-
-
 # @probablyduncan/understory-core
 
 Pure TypeScript library for story data types and parsing. No Node.js APIs, no DOM, no framework dependencies.
@@ -21,10 +10,10 @@ Defines the schema (types) that all other packages share, provides the `Parser` 
 
 | Entry point | Contents |
 |---|---|
-| `@probablyduncan/understory-core` | All types, `validateScene`, `validateStory` |
-| `@probablyduncan/understory-core/parsers` | `Parser` interface, `ParserOptions`, `ParseError`, all built-in parsers |
+| `@probablyduncan/understory-core` | All types, `StoryIssue`, `ValidationResult`, `ParseResult`, `ParseAndValidateResult`, `validateScene`, `validateStory`, `parseAndValidate` |
+| `@probablyduncan/understory-core/parsers` | `Parser` interface, `parseAndValidate`, all built-in parsers |
 
-Types are defined in `src/types.ts`. The `Parser` interface, `ParserOptions`, and `ParseError` class live in `src/parsers/index.ts`. The shared edge text parser lives in `src/parsers/stateExpression.ts`.
+Types are defined in `src/types.ts`. The `Parser` interface, `ParserOptions`, `ParseResult`, and `parseAndValidate` live in `src/parsers/index.ts`. The shared conditional parser lives in `src/parsers/stateExpression.ts`.
 
 ## Schema
 
@@ -52,13 +41,17 @@ validateScene(scene: Scene): ValidationResult   // dead ends, missing refs, unre
 validateStory(scenes: Scene[]): ValidationResult // cross-scene: missing scene refs, orphan scenes
 ```
 
-Defined in `src/validation.ts`.
+`ValidationResult.issues` is `StoryIssue[]`. Each `StoryIssue` has `severity`, `code`, `message`, and optional context fields (`line`, `nodeId`, `sceneId`).
+
+Defined in `src/parsers/validation.ts`.
 
 ## Parser Interface
 
-Defined in `src/parsers/index.ts`. Parsers receive string content (not file paths), are synchronous, and have no side effects. `ParserOptions.assets` is a map of asset filenames to their type (`"image"`, `"custom"`, `"scene"`), built by the integration layer.
+Defined in `src/parsers/index.ts`. Parsers receive string content (not file paths), are synchronous, and have no side effects. `parse()` returns a `ParseResult` — `{ scene: Scene | null, issues: StoryIssue[] }` — and never throws. `ParserOptions.assets` is a map of asset filenames to their type (`"image"`, `"custom"`, `"scene"`), built by the integration layer.
 
-See `src/parsers/parser-dir/README.md` for the parser specifics.
+`parseAndValidate(parser, id, content, options?)` runs parse then `validateScene` in sequence, returning a combined `{ scene, issues, valid }`.
+
+See each parser's `README.md` for format-specific details.
 
 ## Key Constraints
 

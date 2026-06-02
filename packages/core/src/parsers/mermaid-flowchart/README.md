@@ -122,13 +122,7 @@ Vertex text is run through `applyMarkdown()` (in `nodeBuilder.ts`): bold, italic
 
 ## Error Handling
 
-```
-ParseError: line 5: Unrecognized syntax "..."
-ParseError: line 8: Unknown vertex shape in "id<text>"
-ParseError: Edge references undefined vertex "xyz"
-```
-
-Line numbers included when possible. The integration layer catches `ParseError` and logs without crashing the dev server.
+Parse errors are returned as `StoryIssue` entries in `ParseResult.issues` rather than thrown. `scene` is `null` on failure. Line numbers are included when available (`issue.line`). Invariant violations (programmer errors) still throw.
 
 ## Example
 
