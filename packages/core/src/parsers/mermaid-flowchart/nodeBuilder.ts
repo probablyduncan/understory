@@ -89,16 +89,19 @@ function buildNode(
         }
     }
 
-    // Asset resolution: text content takes precedence over bracket shape
+    // Asset resolution: text content takes precedence over bracket shape.
+    // Shape is preserved as an optional style hint for the UI layer.
     if (vertex.text !== undefined) {
+        const style = SHAPE_NODE_TYPE[vertex.shape]?.style;
+        const s = style ? { style } : {};
         if (options?.scenes?.has(vertex.text)) {
-            return { type: "scene", id, sceneId: vertex.text, children: [] };
+            return { type: "scene", id, sceneId: vertex.text, children: [], ...s };
         }
         if (options?.images?.has(vertex.text)) {
-            return { type: "image", id, src: vertex.text, alt: "", children: [] };
+            return { type: "image", id, src: vertex.text, alt: "", children: [], ...s };
         }
         if (options?.custom?.has(vertex.text)) {
-            return { type: "custom", id, name: vertex.text, children: [] };
+            return { type: "custom", id, name: vertex.text, children: [], ...s };
         }
     }
 

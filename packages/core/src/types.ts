@@ -53,11 +53,13 @@ export type ImageNode = NodeBase & {
 export type SceneNode = NodeBase & {
     type: "scene";
     sceneId: string;
+    style?: string;
 };
 
 export type CustomNode = NodeBase & {
     type: "custom";
     name: string;
+    style?: string;
     params?: Record<string, unknown>;
 };
 

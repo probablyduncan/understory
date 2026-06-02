@@ -287,10 +287,40 @@ describe("MermaidFlowchartParser", () => {
             expect(scene.nodes["img"]?.type).toBe("image");
         });
 
-        it("square brackets can match scene asset (shape doesn't matter)", () => {
+        it("asset type is determined by text match regardless of shape", () => {
+            // square [text], subroutine [[text]], round (text), stadium ([text]) — all produce SceneNode
+            const cases = [
+                "flowchart TD\n    begin --> a[chapter2.mmd]",
+                "flowchart TD\n    begin --> a[[chapter2.mmd]]",
+                "flowchart TD\n    begin --> a(chapter2.mmd)",
+                "flowchart TD\n    begin --> a([chapter2.mmd])",
+            ];
+            for (const content of cases) {
+                const scene = parser.parseScene("intro", content, { scenes: new Set(["chapter2.mmd"]) }).scene!;
+                expect(scene.nodes["a"]?.type).toBe("scene");
+            }
+        });
+
+        it("subroutine shape [[...]] gives style 'emphasis' on asset nodes", () => {
+            const content = "flowchart TD\n    begin --> a[[chapter2.mmd]]";
+            const scene = parser.parseScene("intro", content, { scenes: new Set(["chapter2.mmd"]) }).scene!;
+            expect((scene.nodes["a"] as { style?: string }).style).toBe("emphasis");
+        });
+
+        it("square shape [...] gives no style on asset nodes", () => {
             const content = "flowchart TD\n    begin --> a[chapter2.mmd]";
             const scene = parser.parseScene("intro", content, { scenes: new Set(["chapter2.mmd"]) }).scene!;
-            expect(scene.nodes["a"]?.type).toBe("scene");
+            expect((scene.nodes["a"] as { style?: string }).style).toBeUndefined();
+        });
+
+        it("shape style applies equally to image and custom asset nodes", () => {
+            const imgContent = "flowchart TD\n    begin --> a[[sword.webp]]";
+            const imgScene = parser.parseScene("s", imgContent, { images: new Set(["sword.webp"]) }).scene!;
+            expect((imgScene.nodes["a"] as { style?: string }).style).toBe("emphasis");
+
+            const customContent = "flowchart TD\n    begin --> a[[MyRenderer]]";
+            const customScene = parser.parseScene("s", customContent, { custom: new Set(["MyRenderer"]) }).scene!;
+            expect((customScene.nodes["a"] as { style?: string }).style).toBe("emphasis");
         });
     });
 
