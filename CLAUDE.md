@@ -67,6 +67,7 @@ The mermaid parser (`packages/core/src/parsers/mermaid-flowchart/`) is a custom 
 - Reserved keywords (`begin`, `clear`, `return`, `reset`)
 - Edge stroke → delay mapping (`-->`, `==>`, `-.->`  , `~~~`)
 - Edge text mini-language for conditions and effects (`hasKey`, `+gold`, `level > 5`)
+- Scene references: `[[chapter1.mmd]]` in a `.mmd` file creates a `SceneNode` with `sceneId: "chapter1"` (extension stripped). Any vertex shape works; bare names without extension are not resolved as scene references.
 
 `stateExpression.ts` (sibling of the mermaid directory) is shared parsing logic for edge text — used by any parser, not just mermaid.
 

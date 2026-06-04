@@ -176,4 +176,27 @@ describe("tokenize", () => {
             }
         });
     });
+
+    describe("vertex IDs with periods", () => {
+        it("period in target vertex ID is parsed correctly", () => {
+            const { vertices, edges } = tokenize("a --> forest.mmd");
+            expect(vertices.get("forest.mmd")).toMatchObject({ id: "forest.mmd", shape: "none" });
+            expect(edges[0]).toMatchObject({ sourceId: "a", targetId: "forest.mmd" });
+        });
+
+        it("period in source vertex ID is parsed correctly", () => {
+            const { edges } = tokenize("forest.mmd --> b");
+            expect(edges[0]).toMatchObject({ sourceId: "forest.mmd", targetId: "b" });
+        });
+
+        it("period in vertex ID with bracket shape", () => {
+            const { vertices } = tokenize("a --> forest.mmd[text]");
+            expect(vertices.get("forest.mmd")).toMatchObject({ id: "forest.mmd", shape: "square", text: "text" });
+        });
+
+        it("multiple periods in vertex ID", () => {
+            const { edges } = tokenize("a --> my.scene.mmd");
+            expect(edges[0]).toMatchObject({ targetId: "my.scene.mmd" });
+        });
+    });
 });

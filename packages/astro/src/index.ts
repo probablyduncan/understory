@@ -18,6 +18,11 @@ export default function understory(config: UnderstoryConfig): AstroIntegration {
             "astro:config:setup": async ({ config: astroConfig, logger, injectRoute, updateConfig }) => {
                 const { scenes } = await loadContent(config.content, astroConfig.root, config.startSceneId);
 
+                const collisions = scenes.flatMap((s) => s.issues).filter((i) => i.code === "scene_id_collision");
+                if (collisions.length > 0) {
+                    throw new Error(collisions.map((i) => i.message).join("\n"));
+                }
+
                 for (const { id, issues } of scenes) {
                     for (const issue of issues) {
                         const msg = `[${id}] ${issue.message}`;

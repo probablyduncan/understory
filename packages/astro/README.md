@@ -126,8 +126,8 @@ Referenced in config via `stylesheet: "./custom.css"`.
 
 ## CSS Class Naming
 
-All component classes use the `st-` prefix:
-- `st-dialogue`, `st-text`, `st-choice`, `st-choice--visited`, `st-choice-group`, `st-debug`, `st-settings`
+All component classes use the `us-` prefix:
+- `us-dialogue`, `us-text`, `us-choice`, `us-choice--visited`, `us-choice-group`, `us-debug`, `us-settings`
 
 ## Display Modes
 

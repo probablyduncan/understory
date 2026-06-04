@@ -26,9 +26,10 @@ export type TokenizerResult = {
 };
 
 // Matches vertex specs: id, id[text], id(text), id{text}, id[[text]], id([text])
+// IDs may contain word characters and periods (e.g. forest.mmd as a bare vertex ID).
 // Order matters: longer bracket patterns before shorter ones.
 const VERTEX_SPEC_RE =
-    /^(\w+)(?:\[\[([^\]]*)\]\]|\(\[([^\]]*)\]\)|\[([^\]]*)\]|\(([^)]*)\)|\{([^}]*)\})?$/;
+    /^([\w.]+)(?:\[\[([^\]]*)\]\]|\(\[([^\]]*)\]\)|\[([^\]]*)\]|\(([^)]*)\)|\{([^}]*)\})?$/;
 
 function parseVertexSpec(s: string): VertexInfo | null {
     const m = s.trim().match(VERTEX_SPEC_RE);
@@ -93,7 +94,7 @@ function parseHead(s: string): EdgeHead {
 // Matches a vertex spec prefix in a string, returns { spec, rest } or null.
 // Handles all bracket forms; used for sequential parsing of edge lines.
 const VERTEX_SPEC_PREFIX_RE =
-    /^(\w+(?:\[\[[^\]]*\]\]|\(\[[^\]]*\]\)|\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)/;
+    /^([\w.]+(?:\[\[[^\]]*\]\]|\(\[[^\]]*\]\)|\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)/;
 
 const ARROW_RE = /^(-{2,}[>ox]?|={2,}[>ox]?|-\.+-[>ox]?|~{3,})/;
 

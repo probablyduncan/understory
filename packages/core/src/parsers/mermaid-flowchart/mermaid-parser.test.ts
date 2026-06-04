@@ -278,7 +278,7 @@ describe("MermaidFlowchartParser", () => {
             const content = "flowchart TD\n    begin --> a\n    a --> portal[[chapter2.mmd]]";
             const scene = parser.parseScene("intro", content, { scenes: new Set(["chapter2.mmd"]) }).scene!;
             expect(scene.nodes["portal"]?.type).toBe("scene");
-            expect((scene.nodes["portal"] as { sceneId: string }).sceneId).toBe("chapter2.mmd");
+            expect((scene.nodes["portal"] as { sceneId: string }).sceneId).toBe("chapter2");
         });
 
         it("text matching an image asset becomes ImageNode", () => {
@@ -311,6 +311,25 @@ describe("MermaidFlowchartParser", () => {
             const content = "flowchart TD\n    begin --> a[chapter2.mmd]";
             const scene = parser.parseScene("intro", content, { scenes: new Set(["chapter2.mmd"]) }).scene!;
             expect((scene.nodes["a"] as { style?: string }).style).toBeUndefined();
+        });
+
+        it("does not resolve to scene if extension does not match the known filename", () => {
+            const content = "flowchart TD\n    begin --> a[[chapter2.txt]]";
+            const scene = parser.parseScene("intro", content, { scenes: new Set(["chapter2.mmd"]) }).scene!;
+            expect(scene.nodes["a"]?.type).not.toBe("scene");
+        });
+
+        it("bare name without extension is not resolved as a scene reference", () => {
+            const content = "flowchart TD\n    begin --> a[[chapter2]]";
+            const scene = parser.parseScene("intro", content, { scenes: new Set(["chapter2.mmd"]) }).scene!;
+            expect(scene.nodes["a"]?.type).not.toBe("scene");
+        });
+
+        it("bare vertex id with period is treated as a scene reference when the filename matches", () => {
+            const content = "flowchart TD\n    begin --> chapter2.mmd";
+            const scene = parser.parseScene("intro", content, { scenes: new Set(["chapter2.mmd"]) }).scene!;
+            expect(scene.nodes["chapter2.mmd"]?.type).toBe("scene");
+            expect((scene.nodes["chapter2.mmd"] as { sceneId: string }).sceneId).toBe("chapter2");
         });
 
         it("shape style applies equally to image and custom asset nodes", () => {

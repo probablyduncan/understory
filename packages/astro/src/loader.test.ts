@@ -19,7 +19,7 @@ describe("loadContent", () => {
             const { content } = await loadContent(
                 [{ dir: "images", type: "images" }],
                 fixtureRoot(),
-                "intro.mmd",
+                "intro",
             );
             expect(content.images).toContain("sword.webp");
             expect(content.images).toContain("forest.png");
@@ -31,7 +31,7 @@ describe("loadContent", () => {
             const { content } = await loadContent(
                 [{ dir: "custom", type: "custom" }],
                 fixtureRoot(),
-                "intro.mmd",
+                "intro",
             );
             expect(content.custom).toContain("MyRenderer");
         });
@@ -40,7 +40,7 @@ describe("loadContent", () => {
             const { content } = await loadContent(
                 [{ dir: "images", type: "images", extensions: [".webp"] }],
                 fixtureRoot(),
-                "intro.mmd",
+                "intro",
             );
             expect(content.images).toContain("sword.webp");
             expect(content.images).not.toContain("forest.png");
@@ -50,7 +50,7 @@ describe("loadContent", () => {
             const { content } = await loadContent(
                 [{ dir: "nonexistent", type: "images" }],
                 fixtureRoot(),
-                "intro.mmd",
+                "intro",
             );
             expect(content.images.size).toBe(0);
         });
@@ -61,30 +61,33 @@ describe("loadContent", () => {
             const { content, scenes } = await loadContent(
                 [{ dir: "scenes", type: "scenes", parser }],
                 fixtureRoot(),
-                "intro.mmd",
+                "intro",
             );
-            expect(content.scenes).toContain("intro.mmd");
-            expect(content.scenes).toContain("chapter1.mmd");
-            const intro = scenes.find((s) => s.id === "intro.mmd");
+            expect(content.scenes).toContain("intro");
+            expect(content.scenes).toContain("chapter1");
+            const intro = scenes.find((s) => s.id === "intro");
             expect(intro?.scene).not.toBeNull();
         });
 
-        it("derives scene ID as basename including extension", async () => {
+        it("derives scene ID as basename without extension", async () => {
             const { scenes } = await loadContent(
                 [{ dir: "scenes", type: "scenes", parser }],
                 fixtureRoot(),
-                "intro.mmd",
+                "intro",
             );
-            expect(scenes.map((s) => s.id)).toContain("intro.mmd");
+            expect(scenes.map((s) => s.id)).toContain("intro");
+            for (const { id } of scenes) {
+                expect(id).not.toContain(".");
+            }
         });
 
         it("returns issues (not throw) for a malformed scene", async () => {
             const { scenes } = await loadContent(
                 [{ dir: "scenes", type: "scenes", parser }],
                 fixtureRoot(),
-                "intro.mmd",
+                "intro",
             );
-            const broken = scenes.find((s) => s.id === "broken.mmd");
+            const broken = scenes.find((s) => s.id === "broken");
             expect(broken).toBeDefined();
             expect(broken!.scene).toBeNull();
             expect(broken!.issues.length).toBeGreaterThan(0);
@@ -95,11 +98,14 @@ describe("loadContent", () => {
             const { content } = await loadContent(
                 [{ dir: "scenes", type: "scenes", parser }],
                 fixtureRoot(),
-                "intro.mmd",
+                "intro",
             );
-            // parser.extensions = [".mmd"], so only .mmd files should appear
+            // parser.extensions = [".mmd"], so only .mmd files are scanned
+            // scene IDs are bare basenames without extension
+            expect(content.scenes).toContain("intro");
+            expect(content.scenes).toContain("chapter1");
             for (const id of content.scenes) {
-                expect(id.endsWith(".mmd")).toBe(true);
+                expect(id).not.toContain(".");
             }
         });
 
@@ -110,21 +116,21 @@ describe("loadContent", () => {
                     { dir: "images", type: "images" },
                 ],
                 fixtureRoot(),
-                "intro.mmd",
+                "intro",
             );
-            const intro = scenes.find((s) => s.id === "intro.mmd");
+            const intro = scenes.find((s) => s.id === "intro");
             expect(intro?.scene).not.toBeNull();
             // chapter1.mmd is a known scene, so the SceneNode in intro should be resolved
             const sceneNode = Object.values(intro!.scene!.nodes).find(
                 (n) => n.type === "scene",
             );
             expect(sceneNode).toBeDefined();
-            expect((sceneNode as { sceneId: string }).sceneId).toBe("chapter1.mmd");
+            expect((sceneNode as { sceneId: string }).sceneId).toBe("chapter1");
         });
     });
 
     describe("scene ID collision", () => {
-        it("warns on collision and keeps the first scene found", async () => {
+        it("errors on collision and keeps the first scene found", async () => {
             const tmp = join(tmpdir(), `understory-test-${Date.now()}`);
             const subA = join(tmp, "a");
             const subB = join(tmp, "b");
@@ -142,18 +148,48 @@ describe("loadContent", () => {
                         { dir: "b", type: "scenes", parser },
                     ],
                     pathToFileURL(tmp + "/"),
-                    "intro.mmd",
+                    "intro",
                 );
 
-                // Only one scene with id "dupe.mmd" should be present
+                // Only one scene with id "dupe" should be present
                 expect(content.scenes.size).toBe(1);
-                expect(scenes.filter((s) => s.id === "dupe.mmd").length).toBe(1);
+                expect(scenes.filter((s) => s.id === "dupe").length).toBe(1);
 
-                // Collision warning should be attached to the winning scene (dupe.mmd)
-                const dupeScene = scenes.find((s) => s.id === "dupe.mmd");
+                // Collision error should be attached to the winning scene
+                const dupeScene = scenes.find((s) => s.id === "dupe");
                 const collision = dupeScene?.issues.find((i) => i.code === "scene_id_collision");
                 expect(collision).toBeDefined();
-                expect(collision!.severity).toBe("warning");
+                expect(collision!.severity).toBe("error");
+            } finally {
+                await rm(tmp, { recursive: true, force: true });
+            }
+        });
+
+        it("errors on cross-extension collision when two files share the same bare basename", async () => {
+            const tmp = join(tmpdir(), `understory-test-${Date.now()}`);
+            await mkdir(tmp, { recursive: true });
+
+            const scene = "flowchart TD\n    begin --> x[Hello.]\n";
+            await writeFile(join(tmp, "intro.mmd"), scene);
+            await writeFile(join(tmp, "intro.txt"), scene);
+
+            try {
+                const { content, scenes } = await loadContent(
+                    [
+                        { dir: ".", type: "scenes", parser, extensions: [".mmd"] },
+                        { dir: ".", type: "scenes", parser, extensions: [".txt"] },
+                    ],
+                    pathToFileURL(tmp + "/"),
+                    "intro",
+                );
+
+                expect(content.scenes.size).toBe(1);
+                expect(content.scenes).toContain("intro");
+
+                const introScene = scenes.find((s) => s.id === "intro");
+                const collision = introScene?.issues.find((i) => i.code === "scene_id_collision");
+                expect(collision).toBeDefined();
+                expect(collision!.severity).toBe("error");
             } finally {
                 await rm(tmp, { recursive: true, force: true });
             }
@@ -162,9 +198,8 @@ describe("loadContent", () => {
 
     describe("cross-scene validation", () => {
         it("surfaces missing_scene_ref when a referenced scene fails to parse", async () => {
-            // intro.mmd references broken.mmd. broken.mmd is scanned (so the parser
-            // creates a SceneNode for it) but fails to parse (so it's absent from
-            // the parsedScenes array passed to validateScenes). This triggers missing_scene_ref.
+            // intro.mmd references broken.mmd. broken.mmd is scanned (so scene ID "broken" is
+            // known), but fails to parse (absent from parsedScenes). This triggers missing_scene_ref.
             const tmp = join(tmpdir(), `understory-test-${Date.now()}`);
             await mkdir(tmp, { recursive: true });
 
@@ -178,7 +213,7 @@ describe("loadContent", () => {
                 const { scenes } = await loadContent(
                     [{ dir: ".", type: "scenes", parser }],
                     pathToFileURL(tmp + "/"),
-                    "intro.mmd",
+                    "intro",
                 );
 
                 const allIssues = scenes.flatMap((s) => s.issues);
@@ -201,14 +236,14 @@ describe("loadContent", () => {
                 const { scenes } = await loadContent(
                     [{ dir: ".", type: "scenes", parser }],
                     pathToFileURL(tmp + "/"),
-                    "intro.mmd",
+                    "intro",
                 );
 
-                const introIssues = scenes.find((s) => s.id === "intro.mmd")?.issues ?? [];
+                const introIssues = scenes.find((s) => s.id === "intro")?.issues ?? [];
                 expect(introIssues.filter((i) => i.code === "orphan_scene")).toHaveLength(0);
 
-                // other.mmd is not reachable from intro.mmd → still flagged
-                const otherIssues = scenes.find((s) => s.id === "other.mmd")?.issues ?? [];
+                // other is not reachable from intro → still flagged
+                const otherIssues = scenes.find((s) => s.id === "other")?.issues ?? [];
                 expect(otherIssues.find((i) => i.code === "orphan_scene")).toBeDefined();
             } finally {
                 await rm(tmp, { recursive: true, force: true });

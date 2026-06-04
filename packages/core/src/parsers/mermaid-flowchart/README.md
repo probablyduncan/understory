@@ -36,11 +36,13 @@ After all lines are parsed, `buildScene()` does a second pass to convert vertice
 | Square | `id[text]` | `TextNode` |
 | Round | `id(text)` | `ChoiceNode` |
 | Diamond | `id{text}` | `GateNode { strategy: "random" }` |
-| Subroutine | `id[[text]]` | `TextNode { style: "emphasis" }` OR `SceneNode` if text matches a known scene ID |
+| Subroutine | `id[[text]]` | `TextNode { style: "emphasis" }` OR `SceneNode` if text is a known scene filename |
 | Stadium | `id([text])` | `ChoiceNode { style: "minor" }` |
 | None | bare `id` | `GateNode { strategy: "first" }` OR reserved keyword |
 
-**Subroutine → SceneNode** resolution is done via `ParserOptions.assets` (value `"scene"`). The integration layer builds this map; the parser never reads the filesystem.
+**Scene reference resolution:** Any vertex shape whose text matches a known scene *filename* (including extension, e.g. `[[chapter1.mmd]]` or `[chapter1.mmd]`) becomes a `SceneNode`. The resulting `SceneNode.sceneId` is the bare basename without extension (e.g. `"chapter1"`). Bare names without an extension (e.g. `[[chapter1]]`) are **not** resolved as scene references and remain text nodes.
+
+Resolution is done via `ParserOptions.scenes` — a `Set<string>` of bare scene IDs. The integration layer populates this set; the parser never reads the filesystem. Shape is preserved as an optional style hint: subroutine `[[...]]` applies `style: "emphasis"` regardless of whether the node becomes a scene reference.
 
 ## Reserved Keywords (bare IDs)
 
@@ -115,6 +117,8 @@ hasKey OR profession == poet         → OR(check(hasKey), compare(profession ==
 ### Variable Scope Prefixing
 
 Names without `:` are prefixed with the scene ID: `hasKey` in scene `barista` → `barista:hasKey`. Names containing `:` are left as-is: `global:gameStarted` stays unchanged. `visited:*` keys already contain `:` and are not prefixed.
+
+Scene IDs are bare basenames (e.g. `"barista"`, not `"barista.mmd"`), so variable keys like `barista:hasKey` and `visited:barista:e` contain no file extensions.
 
 ## Text Processing (Vertex Text)
 

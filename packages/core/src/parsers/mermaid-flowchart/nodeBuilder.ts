@@ -67,6 +67,14 @@ function classifyReservedId(id: string, shape: string): "begin" | "return" | "cl
     return null;
 }
 
+// --- Scene ID resolution from filenames ---
+
+function resolveSceneId(text: string, sceneFilenames?: Set<string>): string | undefined {
+    if (!sceneFilenames || !sceneFilenames.has(text)) return undefined;
+    const lastDot = text.lastIndexOf(".");
+    return lastDot > 0 ? text.slice(0, lastDot) : text;
+}
+
 // --- Node construction (shape/asset → StoryNode) ---
 
 function buildNode(
@@ -90,18 +98,22 @@ function buildNode(
     }
 
     // Asset resolution: text content takes precedence over bracket shape.
+    // For bare vertices (shape "none", no text), the vertex ID itself is the lookup key —
+    // this allows using a filename directly as a node ID: `a --> forest.mmd`.
     // Shape is preserved as an optional style hint for the UI layer.
-    if (vertex.text !== undefined) {
+    const assetText = vertex.text !== undefined ? vertex.text : (vertex.shape === "none" ? vertex.id : undefined);
+    if (assetText !== undefined) {
         const style = SHAPE_NODE_TYPE[vertex.shape]?.style;
         const s = style ? { style } : {};
-        if (options?.scenes?.has(vertex.text)) {
-            return { type: "scene", id, sceneId: vertex.text, children: [], ...s };
+        const resolvedSceneId = resolveSceneId(assetText, options?.scenes);
+        if (resolvedSceneId !== undefined) {
+            return { type: "scene", id, sceneId: resolvedSceneId, children: [], ...s };
         }
-        if (options?.images?.has(vertex.text)) {
-            return { type: "image", id, src: vertex.text, alt: "", children: [], ...s };
+        if (options?.images?.has(assetText)) {
+            return { type: "image", id, src: assetText, alt: "", children: [], ...s };
         }
-        if (options?.custom?.has(vertex.text)) {
-            return { type: "custom", id, name: vertex.text, children: [], ...s };
+        if (options?.custom?.has(assetText)) {
+            return { type: "custom", id, name: assetText, children: [], ...s };
         }
     }
 

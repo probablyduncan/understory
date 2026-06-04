@@ -54,7 +54,8 @@ export async function loadContent(
     type SceneFile = { filepath: string; source: Extract<ContentSource, { type: "scenes" }> };
     const sceneFiles: SceneFile[] = [];
     const seenSceneIds = new Map<string, string>(); // id → filepath (for collision detection)
-    const collisionWarnings: Array<{ id: string; message: string }> = [];
+    const collisionErrors = new Map<string, string>(); // id → error message
+    const sceneFilenames = new Set<string>(); // full filenames for parser (e.g. "intro.mmd")
 
     for (const source of sources) {
         const dirPath = resolve(rootDir, source.dir);
@@ -76,15 +77,17 @@ export async function loadContent(
             const extensions = source.extensions ?? source.parser.extensions;
             const files = await scanDir(dirPath, extensions);
             for (const filepath of files) {
-                const id = basename(filepath);
+                const filename = basename(filepath);
+                const id = basename(filepath, extname(filepath));
                 if (seenSceneIds.has(id)) {
-                    collisionWarnings.push({
+                    collisionErrors.set(
                         id,
-                        message: `Scene ID collision: "${id}" found at both "${seenSceneIds.get(id)}" and "${filepath}". Using first.`,
-                    });
+                        `Scene ID collision: "${id}" derived from both "${seenSceneIds.get(id)}" and "${filepath}". Only the first will be used.`,
+                    );
                 } else {
                     seenSceneIds.set(id, filepath);
                     content.scenes.add(id);
+                    sceneFilenames.add(filename);
                     sceneFiles.push({ filepath, source });
                 }
             }
@@ -92,8 +95,10 @@ export async function loadContent(
     }
 
     // Second pass: parse all scene files now that we have complete asset Sets
+    // parserOptions.scenes contains full filenames (e.g. "intro.mmd") for exact matching in parsers.
+    // content.scenes (bare IDs) is the consumer-facing API.
     const parserOptions = {
-        scenes: content.scenes,
+        scenes: sceneFilenames,
         images: content.images,
         custom: content.custom,
     };
@@ -101,7 +106,7 @@ export async function loadContent(
     const loadedScenes: LoadedScene[] = [];
 
     for (const { filepath, source } of sceneFiles) {
-        const id = basename(filepath);
+        const id = basename(filepath, extname(filepath));
         let fileContent: string;
 
         try {
@@ -137,10 +142,10 @@ export async function loadContent(
         }
     }
 
-    // Attach collision warnings to the winning scene (the first one found with that ID)
-    for (const { id, message } of collisionWarnings) {
+    // Attach collision errors to the winning scene (the first one found with that ID)
+    for (const [id, message] of collisionErrors) {
         const target = loadedScenes.find((s) => s.id === id);
-        target?.issues.push({ severity: "warning", code: "scene_id_collision", message });
+        target?.issues.push({ severity: "error", code: "scene_id_collision", message });
     }
 
     return { content, scenes: loadedScenes };

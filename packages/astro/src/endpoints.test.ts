@@ -28,28 +28,28 @@ describe("buildSceneEndpoints", () => {
     });
 
     it("includes scenes with non-null scene objects", () => {
-        const scene = makeScene("intro.mmd");
-        const result = buildSceneEndpoints([makeLoadedScene("intro.mmd", scene)]);
+        const scene = makeScene("intro");
+        const result = buildSceneEndpoints([makeLoadedScene("intro", scene)]);
         expect(result.size).toBe(1);
-        expect(result.get("intro.mmd")).toBe(scene);
+        expect(result.get("intro")).toBe(scene);
     });
 
     it("filters out scenes with null scene objects", () => {
-        const result = buildSceneEndpoints([makeLoadedScene("broken.mmd", null)]);
+        const result = buildSceneEndpoints([makeLoadedScene("broken", null)]);
         expect(result.size).toBe(0);
     });
 
     it("handles mixed valid and failed parses", () => {
         const loaded = [
-            makeLoadedScene("intro.mmd"),
-            makeLoadedScene("chapter1.mmd"),
-            makeLoadedScene("broken.mmd", null),
+            makeLoadedScene("intro"),
+            makeLoadedScene("chapter1"),
+            makeLoadedScene("broken", null),
         ];
         const result = buildSceneEndpoints(loaded);
         expect(result.size).toBe(2);
-        expect(result.has("intro.mmd")).toBe(true);
-        expect(result.has("chapter1.mmd")).toBe(true);
-        expect(result.has("broken.mmd")).toBe(false);
+        expect(result.has("intro")).toBe(true);
+        expect(result.has("chapter1")).toBe(true);
+        expect(result.has("broken")).toBe(false);
     });
 });
 
@@ -60,36 +60,36 @@ describe("buildScenesVirtualModuleCode", () => {
     });
 
     it("serializes a single scene entry", () => {
-        const scene = makeScene("intro.mmd");
-        const code = buildScenesVirtualModuleCode(new Map([["intro.mmd", scene]]));
+        const scene = makeScene("intro");
+        const code = buildScenesVirtualModuleCode(new Map([["intro", scene]]));
         expect(code).toBe(
-            `export const scenes = new Map([["intro.mmd",${JSON.stringify(scene)}]]);`,
+            `export const scenes = new Map([["intro",${JSON.stringify(scene)}]]);`,
         );
     });
 
     it("serializes multiple scene entries", () => {
-        const intro = makeScene("intro.mmd");
-        const chapter = makeScene("chapter1.mmd");
+        const intro = makeScene("intro");
+        const chapter = makeScene("chapter1");
         const code = buildScenesVirtualModuleCode(
             new Map([
-                ["intro.mmd", intro],
-                ["chapter1.mmd", chapter],
+                ["intro", intro],
+                ["chapter1", chapter],
             ]),
         );
-        expect(code).toContain('"intro.mmd"');
-        expect(code).toContain('"chapter1.mmd"');
+        expect(code).toContain('"intro"');
+        expect(code).toContain('"chapter1"');
         expect(code).toContain(JSON.stringify(intro));
         expect(code).toContain(JSON.stringify(chapter));
     });
 
     it("produces code that evaluates to the correct Map", () => {
-        const scene = makeScene("intro.mmd");
-        const code = buildScenesVirtualModuleCode(new Map([["intro.mmd", scene]]));
+        const scene = makeScene("intro");
+        const code = buildScenesVirtualModuleCode(new Map([["intro", scene]]));
         // strip the `export` keyword and evaluate as an expression
         const result = eval(`(function(){ ${code.replace(/^export /, "")}; return scenes; })()`);
         expect(result).toBeInstanceOf(Map);
         expect(result.size).toBe(1);
-        expect(result.get("intro.mmd")).toEqual(scene);
+        expect(result.get("intro")).toEqual(scene);
     });
 });
 
@@ -106,7 +106,7 @@ describe("understory integration: scene endpoints", () => {
 
         try {
             const integration = understory({
-                startSceneId: "intro.mmd",
+                startSceneId: "intro",
                 content: [{ dir: ".", type: "scenes", parser }],
             });
 
@@ -142,9 +142,9 @@ describe("understory integration: scene endpoints", () => {
             expect(resolved).toBe("\0virtual:understory/scenes");
             expect(plugin.resolveId("something-else")).toBeUndefined();
 
-            // Plugin loads module code containing the scene
+            // Plugin loads module code containing the scene with bare ID
             const code = plugin.load("\0virtual:understory/scenes");
-            expect(code).toContain("intro.mmd");
+            expect(code).toContain('"intro"');
             expect(code).toContain("export const scenes = new Map(");
             expect(plugin.load("other")).toBeUndefined();
         } finally {
@@ -160,7 +160,7 @@ describe("understory integration: scene endpoints", () => {
 
         try {
             const integration = understory({
-                startSceneId: "intro.mmd",
+                startSceneId: "intro",
                 content: [{ dir: ".", type: "scenes", parser }],
             });
 
@@ -180,8 +180,8 @@ describe("understory integration: scene endpoints", () => {
             const plugin = config.vite.plugins[0];
             const code = plugin.load("\0virtual:understory/scenes") as string;
 
-            expect(code).toContain("intro.mmd");
-            expect(code).not.toContain("broken.mmd");
+            expect(code).toContain('"intro"');
+            expect(code).not.toContain('"broken"');
         } finally {
             await rm(tmp, { recursive: true, force: true });
         }
@@ -195,7 +195,7 @@ describe("understory integration: scene endpoints", () => {
 
         try {
             const integration = understory({
-                startSceneId: "intro.mmd",
+                startSceneId: "intro",
                 content: [{ dir: ".", type: "scenes", parser }],
             });
 

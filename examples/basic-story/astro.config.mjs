@@ -4,7 +4,7 @@ import understory, { MermaidFlowchartParser } from "@probablyduncan/understory-a
 export default defineConfig({
     integrations: [
         understory({
-            startSceneId: "intro.mmd",
+            startSceneId: "intro",
             content: [
                 { dir: "src/scenes", type: "scenes", parser: new MermaidFlowchartParser() },
             ],
