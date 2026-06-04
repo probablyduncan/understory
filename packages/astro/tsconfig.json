@@ -7,5 +7,13 @@
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "src/pages/**",
+    "src/layouts/**",
+    "src/components/**",
+    "src/engine/**",
+    "src/animation/**",
+    "src/styles/**"
   ]
 }

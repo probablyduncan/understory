@@ -154,8 +154,8 @@ The package exports an `understory()` function that returns an Astro integration
 
 **CSS architecture:**
 - All package styles wrapped in `@layer understory` — user overrides always win without `!important`
-- Custom properties prefixed `--us-`; component classes prefixed `st-`
-- Prebuilt themes (`terminal`, `paper`, `minimal`) applied via `[data-theme]` on `<html>`
+- Custom properties prefixed `--us-`; component classes prefixed `us-`
+- Prebuilt themes (`terminal`, `paper`, `minimal`) applied via `[data-theme]` on `<html>` (future implementation)
 - Reduced motion: `--us-timing-*` zeroed via media query and programmatically when `config.reduceMotion` is true
 
 **Build note:** `tsc` compiles `index.ts`, `config.ts`, `loader.ts`, and `endpoints.ts`. The `.astro` pages and `.tsx` components remain as source files and are processed by Astro at the user's build time when resolving injected routes from `node_modules`.
@@ -247,7 +247,7 @@ core ← runtime ← astro
 
 8. **Use workspace protocol for internal deps.** Always `"@probablyduncan/understory-core": "workspace:*"`, never a pinned version.
 
-9. **CSS classes are prefixed `st-`.** All component styles use custom properties from the `understory` cascade layer.
+9. **CSS classes are prefixed `us-`.** All component styles use custom properties from the `understory` cascade layer.
 
 10. **Commit messages use conventional commits.** Format: `feat(core): add mermaid parser`, `fix(runtime): handle empty scene path`, `test(astro): add E2E for save/load`.
 
